@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">RecycLens</string>
+    <string name="app_tagline">Learn to Sort Waste!</string>
+    <string name="start_button">START</string>
+</resources>
