@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bgGreen"
+    tools:context=".ScannerActivity">
+
+    <!-- Top photo card (rounded) -->
+    <FrameLayout
+        android:id="@+id/topCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/rounded_25"
+        android:clipToOutline="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/scanButtonsRow"
+        app:layout_constraintDimensionRatio="9:11">
+
+        <!-- Photo -->
+        <ImageView
+            android:id="@+id/topImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/plastic_bottle_sample"
+            tools:src="@drawable/plastic_bottle_sample" />
+
+        <!-- Bottom label bar -->
+        <TextView
+            android:id="@+id/titleBar"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom"
+            android:layout_margin="10dp"
+            android:background="@drawable/label_bar_bg"
+            android:gravity="center"
+            android:text="@string/item_plastic_bottle"
+            android:textColor="@color/blueTitle"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.01" />
+    </FrameLayout>
+
+    <!-- Buttons row -->
+    <LinearLayout
+        android:id="@+id/scanButtonsRow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/topCard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Orange round camera -->
+        <ImageButton
+            android:id="@+id/btnCamera"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:background="@drawable/btn_orange_circle"
+            android:contentDescription="@string/cd_open_camera"
+            app:srcCompat="@drawable/camerabtn"
+            app:tint="@android:color/white"
+            android:elevation="6dp" />
+
+        <Space
+            android:layout_width="28dp"
+            android:layout_height="0dp" />
+
+        <!-- White square gallery -->
+        <ImageButton
+            android:id="@+id/btnGallery"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/btn_white_square"
+            android:contentDescription="@string/cd_open_gallery"
+            app:srcCompat="@drawable/bxs_image"
+            app:tint="@color/blueTitle"
+            android:elevation="4dp" />
+    </LinearLayout>
+
+    <!-- Mint-green info card -->
+    <LinearLayout
+        android:id="@+id/infoCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/rounded_card_green"
+        android:minHeight="156dp"
+        android:padding="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/scanButtonsRow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/includeBottom">
+
+        <!-- Left small bottle icon -->
+        <ImageView
+            android:id="@+id/infoLeftIcon"
+            android:layout_width="32dp"
+            android:layout_height="64dp"
+            android:layout_marginEnd="12dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/plastic_bottle_sample" />
+
+        <!-- Texts -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/infoTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/info_title"
+                android:textColor="@color/blueTitle"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/infoText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/info_description"
+                android:textColor="@android:color/black"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Right blue bin -->
+        <ImageView
+            android:id="@+id/infoRightIcon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="12dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_blue_bin" />
+    </LinearLayout>
+
+    <!-- Bottom bar include -->
+    <include
+        android:id="@+id/includeBottom"
+        layout="@layout/include_bottom_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

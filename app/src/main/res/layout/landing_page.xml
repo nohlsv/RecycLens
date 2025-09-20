@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:clipToOutline="true"
     android:background="@color/blue_primary">
 
-    <!-- App Logo and Title -->
+    <!-- App Logo + Title -->
     <LinearLayout
         android:id="@+id/app_header"
         android:layout_width="wrap_content"
@@ -14,6 +14,14 @@
         android:layout_marginTop="80dp"
         android:orientation="vertical"
         android:gravity="center">
+
+        <ImageView
+            android:id="@+id/img_logo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/recyclensmagnifying"
+            android:contentDescription="@string/app_name" />
 
         <TextView
             android:id="@+id/tv_app_name"
@@ -43,20 +51,35 @@
         android:layout_below="@id/app_header"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="60dp"
-        android:orientation="horizontal"/>
+        android:orientation="horizontal">
 
-    <!-- Start Button -->
-    <Button
+        <ImageView
+            android:id="@+id/img_bins"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/trashbins"
+            android:contentDescription="@string/bin_illustration" />
+    </LinearLayout>
+
+    <!-- START button defined inline -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_start"
         android:layout_width="200dp"
         android:layout_height="60dp"
         android:layout_below="@id/recycling_bins"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="60dp"
-        android:background="@drawable/yellow_button_bg"
         android:text="@string/start_button"
-        android:textColor="@android:color/white"
+        android:textStyle="bold"
         android:textSize="20sp"
-        android:textStyle="bold" />
+        android:textColor="@android:color/white"
+        android:elevation="6dp"
+        app:cornerRadius="28dp"
+        app:backgroundTint="@color/yellow_button"
+        app:rippleColor="@color/yellow_button_ripple"
+        app:insetTop="0dp"
+        app:insetBottom="0dp" />
 
 </RelativeLayout>

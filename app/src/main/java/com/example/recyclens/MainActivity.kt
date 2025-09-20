@@ -1,18 +1,18 @@
 package com.example.recyclens
 
+import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.landing_page)
-        
-        // Set up the START button click listener
-        findViewById<Button>(R.id.btn_start).setOnClickListener {
-            // TODO: Navigate to next screen
+
+        findViewById<MaterialButton>(R.id.btn_start).setOnClickListener {
+            startActivity(Intent(this, ScannerActivity::class.java))
+            finish() // closes landing page
         }
     }
 }

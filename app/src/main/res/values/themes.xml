@@ -1,5 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Use a View theme that exists (from material:1.12.0) -->
+    <style name="Theme.RecycLens" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/greenDark</item>
+        <item name="colorSecondary">@color/greenLight</item>
+        <item name="colorOnPrimary">@color/white</item>
 
-    <style name="Theme.RecycLens" parent="android:Theme.Material.Light.NoActionBar" />
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/greenDark</item>
+        <item name="android:navigationBarColor">@color/greenDark</item>
+
+        <!-- IMPORTANT: remove this until you actually add the font file
+        <item name="fontFamily">@font/poppins</item>
+        -->
+    </style>
 </resources>

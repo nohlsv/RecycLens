@@ -1,5 +1,24 @@
+<!-- app/src/main/res/values/strings.xml -->
 <resources>
+    <!-- App -->
     <string name="app_name">RecycLens</string>
-    <string name="app_tagline">Learn to Sort Waste!</string>
+    <string name="app_tagline">Scan. Sort. Play. Learn.</string>
     <string name="start_button">START</string>
+
+    <!-- Scanner page -->
+    <string name="scanner_header">Scanner Page</string>
+    <string name="item_plastic_bottle">Plastic Bottle</string>
+
+    <!-- A11y (content descriptions) -->
+    <string name="cd_camera_preview">Live camera preview</string>
+    <string name="cd_open_camera">Open camera</string>
+    <string name="cd_open_gallery">Open gallery</string>
+    <string name="cd_info_icon">Information icon</string>
+    <string name="cd_bin_icon">Trash bin icon</string>
+
+    <!-- Info card -->
+    <string name="info_title">Non-Biodegradable\nHindi Nabubulok</string>
+    <string name="info_description">
+        This is a Plastic Bottle. It is used to hold water or juice. Plastic bottles go to the non-biodegradable bin.
+    </string>
 </resources>
