@@ -2,10 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Camera permissions/features REMOVED for now -->
+    <!-- Required for CameraX live preview -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Optional: keep only when you implement gallery picker -->
+    <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> -->
+    <!-- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" /> -->
+
+    <!-- Declare camera capability (not strictly required) -->
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <application
+        android:name=".RecycLensApp"
         android:allowBackup="true"
+        android:usesCleartextTraffic="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -14,9 +26,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RecycLens">
 
-        <activity android:name=".StreetCleanupActivity" />
-        <activity android:name=".TrashSortingActivity" />
-        <activity android:name=".GameSelectActivity" />
+        <activity
+            android:name=".ui.GameSelectActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"/>
+
+        <activity
+            android:name=".ui.ChooseLevelActivity" android:exported="false"/>
+
+        <activity
+            android:name=".ui.TrashSortingGameActivity" android:exported="false"/>
+
+        <activity
+            android:name=".ui.StreetCleanupGameActivity" android:exported="false"/>
+
 
         <activity
             android:name=".ScannerActivity"

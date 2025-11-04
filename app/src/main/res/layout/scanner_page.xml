@@ -25,14 +25,13 @@
         app:layout_constraintBottom_toTopOf="@id/scanButtonsRow"
         app:layout_constraintDimensionRatio="9:11">
 
-        <!-- Photo -->
-        <ImageView
-            android:id="@+id/topImage"
+        <!-- Live camera preview -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/plastic_bottle_sample"
-            tools:src="@drawable/plastic_bottle_sample" />
+            app:implementationMode="performance"
+            app:scaleType="fillCenter" />
 
         <!-- Bottom label bar -->
         <TextView
@@ -67,7 +66,7 @@
             android:layout_height="92dp"
             android:background="@drawable/btn_orange_circle"
             android:contentDescription="@string/cd_open_camera"
-            app:srcCompat="@drawable/camerabtn"
+            app:srcCompat="@drawable/typcn_camera"
             app:tint="@android:color/white"
             android:elevation="6dp" />
 

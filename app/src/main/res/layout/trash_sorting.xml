@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/trash_sorting_game_background">
+
+    <ImageButton
+        android:id="@+id/btnBackTrash"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="12dp"
+        android:layout_marginStart="12dp"/>
+
+    <TextView
+        android:id="@+id/titleTrash"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trash Sorting"
+        android:textColor="#1E4D33"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnBackTrash"
+        app:layout_constraintBottom_toBottomOf="@id/btnBackTrash"
+        android:layout_marginStart="8dp"/>
+
+    <ImageButton
+        android:id="@+id/btnInfoTrash"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_info"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"/>
+
+    <TextView
+        android:id="@+id/tvLevel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Easy"
+        android:textColor="#ffffff"
+        android:background="@drawable/label_bar_bg"
+        android:padding="8dp"
+        app:layout_constraintTop_toBottomOf="@id/titleTrash"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="12dp"
+        android:layout_marginStart="12dp"/>
+
+    <!-- Game area placeholder -->
+    <FrameLayout
+        android:id="@+id/gameAreaTrash"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/tvLevel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="12dp"/>
+
+    <!-- Simple start button -->
+    <TextView
+        android:id="@+id/btnStartTrash"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="Start Game"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="@drawable/yellow_button_bg"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,26 +9,28 @@
     android:paddingEnd="16dp">
 
     <!-- Left: small orange camera -->
+
+    <!-- Center: red puzzle (Play) -->
     <ImageButton
         android:id="@+id/navScan"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/btn_orange_circle"
         android:contentDescription="@string/cd_open_camera"
-        app:srcCompat="@drawable/typcn_camera"
         android:tint="@android:color/white"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/labelsRow"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        app:srcCompat="@drawable/typcn_camera" />
 
-    <!-- Center: red puzzle (Play) -->
     <ImageView
         android:id="@+id/navPlay"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:contentDescription="@string/play_games"
-        app:srcCompat="@drawable/PlayGames"
+        app:srcCompat="@drawable/play_game"
         app:layout_constraintTop_toTopOf="@id/navScan"
         app:layout_constraintBottom_toBottomOf="@id/navScan"
         app:layout_constraintStart_toStartOf="parent"
@@ -39,7 +41,7 @@
         android:id="@+id/langToggle"
         android:layout_width="64dp"
         android:layout_height="34dp"
-        android:background="@drawable/lang_toggle_bg"
+        android:background="@drawable/lang_toggle_knob"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         app:layout_constraintTop_toTopOf="@id/navScan"
@@ -73,7 +75,6 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="@android:color/transparent"
-        android:contentDescription="@string/cd_speaker"
         app:srcCompat="@drawable/wpf_speaker"
         android:tint="@android:color/white"
         app:layout_constraintTop_toTopOf="@id/navScan"
@@ -94,23 +95,23 @@
         <TextView
             android:id="@+id/labelScan"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
             android:text="Scan Trash"
             android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/labelPlay"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
             android:text="Play Games"
             android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:textSize="18sp"/>
+            android:textSize="18sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
