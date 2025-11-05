@@ -66,8 +66,8 @@
             android:layout_height="92dp"
             android:background="@drawable/btn_orange_circle"
             android:contentDescription="@string/cd_open_camera"
-            app:srcCompat="@drawable/typcn_camera"
-            app:tint="@android:color/white"
+            android:src="@android:drawable/ic_menu_camera"
+            android:tint="@android:color/white"
             android:elevation="6dp" />
 
         <Space
@@ -81,8 +81,8 @@
             android:layout_height="64dp"
             android:background="@drawable/btn_white_square"
             android:contentDescription="@string/cd_open_gallery"
-            app:srcCompat="@drawable/bxs_image"
-            app:tint="@color/blueTitle"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:tint="@color/blueTitle"
             android:elevation="4dp" />
     </LinearLayout>
 
@@ -103,14 +103,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/includeBottom">
 
-        <!-- Left small bottle icon -->
+        <!-- Left small placeholder icon -->
         <ImageView
             android:id="@+id/infoLeftIcon"
             android:layout_width="32dp"
             android:layout_height="64dp"
             android:layout_marginEnd="12dp"
             android:scaleType="centerInside"
-            android:src="@drawable/plastic_bottle_sample" />
+            android:src="@android:drawable/ic_menu_info_details" />
 
         <!-- Texts -->
         <LinearLayout
@@ -138,14 +138,14 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Right blue bin -->
+        <!-- Right bin icon (placeholder) -->
         <ImageView
             android:id="@+id/infoRightIcon"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginStart="12dp"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_blue_bin" />
+            android:src="@android:drawable/ic_dialog_info" />
     </LinearLayout>
 
     <!-- Bottom bar include -->

@@ -30,15 +30,14 @@ android {
         }
     }
 
-    // We’ll use Compose AND XML
     buildFeatures {
         compose = true
         viewBinding = true
+        mlModelBinding = true
     }
 
-    // Since we removed the Kotlin Compose plugin, set the compiler extension explicitly
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.6.11" // works with Kotlin 2.0.21
+        kotlinCompilerExtensionVersion = "1.6.11" // matches Kotlin 2.0.21
     }
 
     compileOptions {
@@ -47,7 +46,12 @@ android {
     }
     kotlinOptions { jvmTarget = "11" }
 
-    // (Optional) avoid duplicate license files in some libs
+    // Prevent TensorFlow Lite models from being compressed
+    aaptOptions {
+        noCompress("tflite")
+    }
+
+    // Optional cleanup to prevent duplicate META-INF files
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
@@ -55,10 +59,8 @@ android {
     }
 }
 
-// Removed entire ksp { } block since we no longer use KSP/Room
-
 dependencies {
-    // --- Compose (via version catalog) ---
+    // --- Core AndroidX & Compose ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -69,35 +71,31 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.fragment)
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // --- View system (XML) ---
+    // --- View System (XML layouts) ---
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
-    // --- CameraX for live preview ---
+    // --- CameraX ---
     val cameraX = "1.3.4"
     implementation("androidx.camera:camera-core:$cameraX")
     implementation("androidx.camera:camera-camera2:$cameraX")
     implementation("androidx.camera:camera-lifecycle:$cameraX")
     implementation("androidx.camera:camera-view:$cameraX")
 
+    // --- TensorFlow Lite (ML + metadata) ---
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
 
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
-
-    // --- Coroutines (if you use background IO with SQLite) ---
+    // --- Kotlin Coroutines ---
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // --- Tests ---
