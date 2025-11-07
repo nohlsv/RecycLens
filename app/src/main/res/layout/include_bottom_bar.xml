@@ -9,8 +9,6 @@
     android:paddingEnd="16dp">
 
     <!-- Left: small orange camera -->
-
-    <!-- Center: red puzzle (Play) -->
     <ImageButton
         android:id="@+id/navScan"
         android:layout_width="50dp"
@@ -19,22 +17,31 @@
         android:layout_marginTop="10dp"
         android:background="@drawable/btn_orange_circle"
         android:contentDescription="@string/cd_open_camera"
-        android:tint="@android:color/white"
+        android:src="@drawable/typcn_camera"
+        android:adjustViewBounds="true"
+        android:scaleType="centerInside"
         app:layout_constraintBottom_toTopOf="@+id/labelsRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        app:srcCompat="@drawable/typcn_camera" />
+        app:layout_constraintVertical_bias="0.0" />
 
+    <!-- Center: play icon -->
     <ImageView
         android:id="@+id/navPlay"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        app:srcCompat="@drawable/play_game"
+        android:src="@drawable/play_game"
+        android:adjustViewBounds="true"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_open_games"
         app:layout_constraintTop_toTopOf="@id/navScan"
         app:layout_constraintBottom_toBottomOf="@id/navScan"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 
     <!-- Right: language pill -->
     <RelativeLayout
@@ -75,8 +82,9 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="@android:color/transparent"
-        app:srcCompat="@drawable/wpf_speaker"
-        android:tint="@android:color/white"
+        android:src="@drawable/wpf_speaker"
+        android:adjustViewBounds="true"
+        android:scaleType="centerInside"
         app:layout_constraintTop_toTopOf="@id/navScan"
         app:layout_constraintBottom_toBottomOf="@id/navScan"
         app:layout_constraintEnd_toEndOf="parent"/>

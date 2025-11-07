@@ -1,26 +1,34 @@
-package com.example.recyclens.ui
+package com.example.recyclens
 
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.recyclens.R
 
-class TrashSortingGameActivity : AppCompatActivity() {
+// TrashSortingActivity.kt (same pattern for StreetCleanupActivity)
+class TrashSortingActivity : AppCompatActivity() {
+    private lateinit var tvLevel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.trash_sorting)
 
-        val level = intent.getStringExtra(ChooseLevelActivity.EXTRA_LEVEL) ?: "easy"
-        findViewById<TextView>(R.id.tvLevel).text = level.replaceFirstChar { it.uppercase() }
+        setupBottomBar(BottomBar.Tab.PLAY)
 
-        findViewById<ImageButton>(R.id.btnBackTrash).setOnClickListener { finish() }
-        findViewById<ImageButton>(R.id.btnInfoTrash).setOnClickListener {
-            // TODO: show game rules dialog
+        val level = intent.getStringExtra(ChooseLevelActivity.EXTRA_LEVEL) ?: "Easy"
+        tvLevel = findViewById(R.id.tvLevel)
+        tvLevel.text = level
+
+        findViewById<ImageButton>(R.id.btnBackTrash).setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
         }
-        findViewById<TextView>(R.id.btnStartTrash).setOnClickListener {
-            // TODO: start game logic
-        }
+
+        startGame(level)
+        findViewById<TextView>(R.id.btnStartTrash).setOnClickListener { startGame(level) }
+    }
+
+    private fun startGame(level: String) {
+        Toast.makeText(this, "Trash Sorting Game Started at $level level!", Toast.LENGTH_SHORT).show()
     }
 }

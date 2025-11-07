@@ -59,10 +59,10 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/tvLevel"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="12dp"/>
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    android:layout_margin="12dp"/>
 
     <!-- Simple start button -->
     <TextView
@@ -73,8 +73,18 @@
         android:textStyle="bold"
         android:gravity="center"
         android:background="@drawable/yellow_button_bg"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    android:layout_margin="16dp"/>
+
+    <!-- Bottom bar include (added for consistency) -->
+    <include
+        android:id="@+id/bottomBar"
+        layout="@layout/include_bottom_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="16dp"/>
+        app:layout_constraintBottom_toBottomOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

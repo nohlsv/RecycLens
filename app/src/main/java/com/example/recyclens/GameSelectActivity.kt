@@ -1,30 +1,28 @@
-package com.example.recyclens.ui
+package com.example.recyclens
 
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.example.recyclens.R
 
-class GamesSelectActivity : AppCompatActivity() {
+class GameSelectActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.games_page)
+        // Make sure this matches your XML filename exactly (game_page.xml or games_page.xml)
+        setContentView(R.layout.game_page)
 
-        // Tap: Trash Sorting -> Choose Level
+        // Go to ChooseLevel with the selected game
         findViewById<View>(R.id.cardTrashSorting).setOnClickListener {
             startActivity(
                 Intent(this, ChooseLevelActivity::class.java)
-                    .putExtra(ChooseLevelActivity.EXTRA_GAME, "trash")
+                    .putExtra(ChooseLevelActivity.EXTRA_GAME, ChooseLevelActivity.GAME_TRASH)
             )
         }
-
-        // Tap: Street Cleanup -> Choose Level
         findViewById<View>(R.id.cardStreetCleanup).setOnClickListener {
             startActivity(
                 Intent(this, ChooseLevelActivity::class.java)
-                    .putExtra(ChooseLevelActivity.EXTRA_GAME, "street")
+                    .putExtra(ChooseLevelActivity.EXTRA_GAME, ChooseLevelActivity.GAME_STREET)
             )
         }
     }

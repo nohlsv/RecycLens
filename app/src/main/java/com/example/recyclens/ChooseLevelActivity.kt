@@ -1,35 +1,54 @@
-package com.example.recyclens.ui
+package com.example.recyclens
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.recyclens.R
 
 class ChooseLevelActivity : AppCompatActivity() {
+
     companion object {
-        const val EXTRA_GAME = "game"     // "trash" or "street"
-        const val EXTRA_LEVEL = "level"   // "easy" | "medium" | "hard"
+        const val EXTRA_GAME = "extra_game"
+        const val EXTRA_LEVEL = "extra_level"
+
+        const val GAME_TRASH = "trash"
+        const val GAME_STREET = "street"
+
+        const val LEVEL_EASY = "Easy"
+        const val LEVEL_MEDIUM = "Medium"
+        const val LEVEL_HARD = "Hard"
     }
+
+    private lateinit var tvTitle: TextView
+    private var game: String = GAME_TRASH
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.screen_choose_level)
+        setContentView(R.layout.choose_level_page)
 
-        val game = intent.getStringExtra(EXTRA_GAME) ?: "trash"
-        findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
+        tvTitle = findViewById(R.id.tvTitle)
+        game = intent.getStringExtra(EXTRA_GAME) ?: GAME_TRASH
+        tvTitle.text = "Choose Your\nLevel!"
 
-        fun go(level: String) {
-            val target = if (game == "street")
-                Intent(this, StreetCleanupGameActivity::class.java)
-            else
-                Intent(this, TrashSortingGameActivity::class.java)
-            target.putExtra(EXTRA_LEVEL, level)
-            startActivity(target)
-        }
+        // Back (just finish)
+        findViewById<ImageView>(R.id.btnBack)?.setOnClickListener { finish() }
 
-        findViewById<View>(R.id.btnEasy).setOnClickListener { go("easy") }
-        findViewById<View>(R.id.btnMedium).setOnClickListener { go("medium") }
-        findViewById<View>(R.id.btnHard).setOnClickListener { go("hard") }
+        // Level buttons -> open the selected game Activity
+        findViewById<LinearLayout>(R.id.btnEasy)?.setOnClickListener { launchGame(LEVEL_EASY) }
+        findViewById<LinearLayout>(R.id.btnMedium)?.setOnClickListener { launchGame(LEVEL_MEDIUM) }
+        findViewById<LinearLayout>(R.id.btnHard)?.setOnClickListener { launchGame(LEVEL_HARD) }
+    }
+
+    private fun launchGame(level: String) {
+        val dest = if (game == GAME_STREET) StreetCleanupActivity::class.java
+        else TrashSortingActivity::class.java
+
+        startActivity(
+            Intent(this, dest)
+                .putExtra(EXTRA_GAME, game)
+                .putExtra(EXTRA_LEVEL, level)
+        )
     }
 }

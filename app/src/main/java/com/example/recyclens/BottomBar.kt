@@ -1,0 +1,46 @@
+// app/src/main/java/com/example/recyclens/BottomBar.kt
+package com.example.recyclens
+
+import android.app.Activity
+import android.content.Intent
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityOptionsCompat
+
+object BottomBar {
+    enum class Tab { SCAN, PLAY }
+
+    fun setup(activity: Activity, selected: Tab? = null) {
+        val navScan: View? = activity.findViewById(R.id.navScan)
+        val navPlay: View? = activity.findViewById(R.id.navPlay)
+
+        navScan?.isSelected = (selected == Tab.SCAN)
+        navPlay?.isSelected = (selected == Tab.PLAY)
+
+        navScan?.setOnClickListener {
+            if (activity is ScannerActivity) return@setOnClickListener
+            val i = Intent(activity, ScannerActivity::class.java)
+            activity.startActivity(
+                i,
+                ActivityOptionsCompat.makeCustomAnimation(
+                    activity, android.R.anim.fade_in, android.R.anim.fade_out
+                ).toBundle()
+            )
+        }
+
+        navPlay?.setOnClickListener {
+            if (activity is GameSelectActivity) return@setOnClickListener
+            val i = Intent(activity, GameSelectActivity::class.java)
+            activity.startActivity(
+                i,
+                ActivityOptionsCompat.makeCustomAnimation(
+                    activity, android.R.anim.fade_in, android.R.anim.fade_out
+                ).toBundle()
+            )
+        }
+    }
+}
+
+fun AppCompatActivity.setupBottomBar(selected: BottomBar.Tab? = null) {
+    BottomBar.setup(this, selected)
+}

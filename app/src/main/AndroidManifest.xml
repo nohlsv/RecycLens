@@ -6,8 +6,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- Optional: keep only when you implement gallery picker -->
-    <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> -->
-    <!-- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" /> -->
+     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <!-- Declare camera capability (not strictly required) -->
     <uses-feature
@@ -26,27 +26,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RecycLens">
 
-        <activity
-            android:name=".ui.GameSelectActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"/>
+        <activity android:name=".GameSelectActivity" android:exported="true" />
+        <activity android:name=".ChooseLevelActivity" android:exported="true" />
+        <activity android:name=".TrashSortingActivity" />
+        <activity android:name=".StreetCleanupActivity" />
+        <activity android:name=".ScannerActivity" />
 
-        <activity
-            android:name=".ui.ChooseLevelActivity" android:exported="false"/>
+        <activity android:name=".GameHostActivity" />
 
-        <activity
-            android:name=".ui.TrashSortingGameActivity" android:exported="false"/>
-
-        <activity
-            android:name=".ui.StreetCleanupGameActivity" android:exported="false"/>
-
-
-        <activity
-            android:name=".ScannerActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-
-        <!-- Launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
