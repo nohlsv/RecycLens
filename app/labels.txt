@@ -1,0 +1,6 @@
+Plastic
+Paper
+Metal
+Glass
+Biodegradable
+Residual
