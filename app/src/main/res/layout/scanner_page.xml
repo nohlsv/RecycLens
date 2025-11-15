@@ -25,7 +25,6 @@
         app:layout_constraintBottom_toTopOf="@id/scanButtonsRow"
         app:layout_constraintDimensionRatio="9:11">
 
-        <!-- Live camera preview -->
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
             android:layout_width="match_parent"
@@ -33,7 +32,6 @@
             app:implementationMode="performance"
             app:scaleType="fillCenter" />
 
-        <!-- Bottom label bar -->
         <TextView
             android:id="@+id/titleBar"
             android:layout_width="match_parent"
@@ -42,14 +40,13 @@
             android:layout_margin="10dp"
             android:background="@drawable/label_bar_bg"
             android:gravity="center"
-            android:text="@string/item_plastic_bottle"
+            android:text="@string/info_title"
             android:textColor="@color/blueTitle"
             android:textSize="30sp"
             android:textStyle="bold"
             android:letterSpacing="0.01" />
     </FrameLayout>
 
-    <!-- Buttons row -->
     <LinearLayout
         android:id="@+id/scanButtonsRow"
         android:layout_width="wrap_content"
@@ -59,7 +56,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Orange round camera -->
         <ImageButton
             android:id="@+id/btnCamera"
             android:layout_width="92dp"
@@ -74,7 +70,6 @@
             android:layout_width="28dp"
             android:layout_height="0dp" />
 
-        <!-- White square gallery -->
         <ImageButton
             android:id="@+id/btnGallery"
             android:layout_width="64dp"
@@ -86,7 +81,6 @@
             android:elevation="4dp" />
     </LinearLayout>
 
-    <!-- Mint-green info card -->
     <LinearLayout
         android:id="@+id/infoCard"
         android:layout_width="0dp"
@@ -103,7 +97,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/includeBottom">
 
-        <!-- Left small placeholder icon -->
         <ImageView
             android:id="@+id/infoLeftIcon"
             android:layout_width="32dp"
@@ -112,7 +105,6 @@
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_menu_info_details" />
 
-        <!-- Texts -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -138,17 +130,16 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Right bin icon (placeholder) -->
+        <!-- Bin icon: green by default, changed in code -->
         <ImageView
             android:id="@+id/infoRightIcon"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginStart="12dp"
             android:scaleType="centerInside"
-            android:src="@android:drawable/ic_dialog_info" />
+            android:src="@drawable/ic_green_bin" />
     </LinearLayout>
 
-    <!-- Bottom bar include -->
     <include
         android:id="@+id/includeBottom"
         layout="@layout/include_bottom_bar"
