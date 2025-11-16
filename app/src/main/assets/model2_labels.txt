@@ -3,4 +3,9 @@ Kangkong
 Apple
 Bermuda Grass
 Tissue Roll
-Plastic Bottle
+Bottle
+Banana
+Plastic Cup
+Mango
+Okra
+Eggplant
