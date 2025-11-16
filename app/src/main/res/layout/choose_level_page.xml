@@ -69,6 +69,8 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Easy"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -76,6 +78,8 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Learn and play at your own pace!"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>
@@ -106,6 +110,8 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Medium"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -113,6 +119,8 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Sort a little faster!"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>
@@ -142,6 +150,8 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Hard"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -149,6 +159,8 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Test what you've learned!"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>

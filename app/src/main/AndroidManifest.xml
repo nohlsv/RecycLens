@@ -26,12 +26,19 @@
 
         <activity
             android:name=".GameSelectActivity"
-            android:exported="true" />
+            android:exported="false" />
+
         <activity
             android:name=".ChooseLevelActivity"
-            android:exported="true" />
-        <activity android:name=".TrashSortingActivity" />
-        <activity android:name=".StreetCleanupActivity" />
+            android:exported="false" />
+
+        <activity
+            android:name=".TrashSortingActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".StreetCleanupActivity"
+            android:exported="false" />
         <activity android:name=".ScannerActivity" />
         <activity
             android:name=".MainActivity"

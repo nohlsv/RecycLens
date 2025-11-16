@@ -1,14 +1,11 @@
 package com.example.recyclens
 
 import android.os.Bundle
-import android.widget.ImageButton
+import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
-// TrashSortingActivity.kt (same pattern for StreetCleanupActivity)
 class TrashSortingActivity : AppCompatActivity() {
-    private lateinit var tvLevel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,19 +13,10 @@ class TrashSortingActivity : AppCompatActivity() {
 
         setupBottomBar(BottomBar.Tab.PLAY)
 
-        val level = intent.getStringExtra(ChooseLevelActivity.EXTRA_LEVEL) ?: "Easy"
-        tvLevel = findViewById(R.id.tvLevel)
-        tvLevel.text = level
+        val btnBack: View = findViewById(R.id.btnBackTrash)
+        val tvLevel: TextView = findViewById(R.id.tvLevel)
+        tvLevel.text = "Easy"
 
-        findViewById<ImageButton>(R.id.btnBackTrash).setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
-        startGame(level)
-        findViewById<TextView>(R.id.btnStartTrash).setOnClickListener { startGame(level) }
-    }
-
-    private fun startGame(level: String) {
-        Toast.makeText(this, "Trash Sorting Game Started at $level level!", Toast.LENGTH_SHORT).show()
+        btnBack.setOnClickListener { finish() }
     }
 }

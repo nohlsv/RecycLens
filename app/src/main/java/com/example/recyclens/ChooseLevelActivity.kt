@@ -2,53 +2,57 @@ package com.example.recyclens
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ImageView
-import android.widget.LinearLayout
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class ChooseLevelActivity : AppCompatActivity() {
 
-    companion object {
-        const val EXTRA_GAME = "extra_game"
-        const val EXTRA_LEVEL = "extra_level"
-
-        const val GAME_TRASH = "trash"
-        const val GAME_STREET = "street"
-
-        const val LEVEL_EASY = "Easy"
-        const val LEVEL_MEDIUM = "Medium"
-        const val LEVEL_HARD = "Hard"
-    }
-
-    private lateinit var tvTitle: TextView
-    private var game: String = GAME_TRASH
+    private var gameType: String = GameSelectActivity.GAME_TRASH_SORTING
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.choose_level_page)
 
-        tvTitle = findViewById(R.id.tvTitle)
-        game = intent.getStringExtra(EXTRA_GAME) ?: GAME_TRASH
-        tvTitle.text = "Choose Your\nLevel!"
+        setupBottomBar(BottomBar.Tab.PLAY)
 
-        // Back (just finish)
-        findViewById<ImageView>(R.id.btnBack)?.setOnClickListener { finish() }
+        gameType = intent.getStringExtra(GameSelectActivity.EXTRA_GAME_TYPE)
+            ?: GameSelectActivity.GAME_TRASH_SORTING
 
-        // Level buttons -> open the selected game Activity
-        findViewById<LinearLayout>(R.id.btnEasy)?.setOnClickListener { launchGame(LEVEL_EASY) }
-        findViewById<LinearLayout>(R.id.btnMedium)?.setOnClickListener { launchGame(LEVEL_MEDIUM) }
-        findViewById<LinearLayout>(R.id.btnHard)?.setOnClickListener { launchGame(LEVEL_HARD) }
+        val btnBack: View = findViewById(R.id.btnBack)
+        val tvTitle: TextView = findViewById(R.id.tvTitle)
+
+        val btnEasy: View = findViewById(R.id.btnEasy)
+        val btnMedium: View = findViewById(R.id.btnMedium)
+        val btnHard: View = findViewById(R.id.btnHard)
+
+        tvTitle.text = when (gameType) {
+            GameSelectActivity.GAME_STREET_CLEANUP ->
+                "Choose Your\nLevel!\n(Street Cleanup)"
+            GameSelectActivity.GAME_TRASH_SORTING ->
+                "Choose Your\nLevel!\n(Trash Sorting)"
+            else ->
+                "Choose Your\nLevel!"
+        }
+
+        btnBack.setOnClickListener { finish() }
+
+        // All three buttons open the same game for now
+        btnEasy.setOnClickListener   { openGame() }
+        btnMedium.setOnClickListener { openGame() }
+        btnHard.setOnClickListener   { openGame() }
     }
 
-    private fun launchGame(level: String) {
-        val dest = if (game == GAME_STREET) StreetCleanupActivity::class.java
-        else TrashSortingActivity::class.java
+    private fun openGame() {
+        val target = when (gameType) {
+            GameSelectActivity.GAME_STREET_CLEANUP ->
+                StreetCleanupActivity::class.java
+            GameSelectActivity.GAME_TRASH_SORTING ->
+                TrashSortingActivity::class.java
+            else ->
+                TrashSortingActivity::class.java
+        }
 
-        startActivity(
-            Intent(this, dest)
-                .putExtra(EXTRA_GAME, game)
-                .putExtra(EXTRA_LEVEL, level)
-        )
+        startActivity(Intent(this, target))
     }
 }
