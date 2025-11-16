@@ -47,18 +47,26 @@ class ScannerActivity : ComponentActivity() {
     private var capturedView: ImageView? = null
     private var showingCaptured = false
 
-    // --- TFLite: two models ---
+    // --- TFLite: models ---
     private var fruitInterpreter: Interpreter? = null
     private var fruitLabels: List<String> = emptyList()
 
     private var plasticInterpreter: Interpreter? = null
     private var plasticLabels: List<String> = emptyList()
 
+    // NEW: model2 for Ampalaya, Kangkong, Apple, Bermuda Grass, Tissue Roll, Plastic Bottle
+    private var model2Interpreter: Interpreter? = null
+    private var model2Labels: List<String> = emptyList()
+
     // Place these files in: app/src/main/assets/
     private val FRUIT_MODEL = "fruit_model1.tflite"
     private val PLASTIC_MODEL = "plastic_cup_eggplant_okra.tflite"
     private val FRUIT_LABELS_FILE = "fruit_labels.txt"
     private val PLASTIC_LABELS_FILE = "plastic_labels.txt"
+
+    // NEW: your additional model + labels
+    private val MODEL2 = "model2.tflite"
+    private val MODEL2_LABELS_FILE = "model2_labels.txt" // make sure this exists in assets
 
     private val INPUT_SIZE = 224
 
@@ -123,6 +131,7 @@ class ScannerActivity : ComponentActivity() {
         cameraExecutor.shutdown()
         fruitInterpreter?.close()
         plasticInterpreter?.close()
+        model2Interpreter?.close()
     }
 
     // ---------- Camera ----------
@@ -210,7 +219,7 @@ class ScannerActivity : ComponentActivity() {
     // ---------- Model init (independent, robust) ----------
 
     private fun initModels() {
-        // Try fruit model
+        // Fruit model (banana, mango, maybe more)
         try {
             val mapped = loadModelMapped(FRUIT_MODEL)
             fruitInterpreter = Interpreter(mapped, Interpreter.Options())
@@ -223,7 +232,7 @@ class ScannerActivity : ComponentActivity() {
             fruitLabels = emptyList()
         }
 
-        // Try plastic/veggies model
+        // Plastic / veg model (plastic cup, okra, eggplant, etc.)
         try {
             val mapped = loadModelMapped(PLASTIC_MODEL)
             plasticInterpreter = Interpreter(mapped, Interpreter.Options())
@@ -236,7 +245,20 @@ class ScannerActivity : ComponentActivity() {
             plasticLabels = emptyList()
         }
 
-        if (fruitInterpreter == null && plasticInterpreter == null) {
+        // NEW: model2 for Ampalaya, Kangkong, Apple, Bermuda Grass, Tissue Roll, Plastic Bottle
+        try {
+            val mapped = loadModelMapped(MODEL2)
+            model2Interpreter = Interpreter(mapped, Interpreter.Options())
+            model2Labels = assets.open(MODEL2_LABELS_FILE)
+                .bufferedReader()
+                .readLines()
+                .filter { it.isNotBlank() }
+        } catch (_: Exception) {
+            model2Interpreter = null
+            model2Labels = emptyList()
+        }
+
+        if (fruitInterpreter == null && plasticInterpreter == null && model2Interpreter == null) {
             Toast.makeText(
                 this,
                 "I can't load my models. Please check the .tflite and .txt files in assets.",
@@ -262,8 +284,9 @@ class ScannerActivity : ComponentActivity() {
     private fun runRecognitionIfAvailable(bitmap: Bitmap) {
         val fruitInt = fruitInterpreter
         val plasticInt = plasticInterpreter
+        val model2Int = model2Interpreter
 
-        if (fruitInt == null && plasticInt == null) {
+        if (fruitInt == null && plasticInt == null && model2Int == null) {
             titleBar.text = "Photo Loaded"
             infoTitle.text = "Helper is sleeping"
             infoText.text  = "Ask your teacher to check the app files."
@@ -279,7 +302,7 @@ class ScannerActivity : ComponentActivity() {
         cameraExecutor.execute {
             val candidates = mutableListOf<PredictedItem>()
 
-            // Fruit model → banana / mango
+            // Fruit model → banana / mango / (maybe apple if included)
             if (fruitInt != null && fruitLabels.isNotEmpty()) {
                 classifyWithModel(bitmap, fruitInt, fruitLabels)?.let { (label, score) ->
                     mapToCategory(label)?.let { cat ->
@@ -291,6 +314,15 @@ class ScannerActivity : ComponentActivity() {
             // Plastic/veg model → plastic cup / okra / eggplant
             if (plasticInt != null && plasticLabels.isNotEmpty()) {
                 classifyWithModel(bitmap, plasticInt, plasticLabels)?.let { (label, score) ->
+                    mapToCategory(label)?.let { cat ->
+                        candidates.add(PredictedItem(label, score, cat))
+                    }
+                }
+            }
+
+            // NEW: model2 → Ampalaya, Kangkong, Apple, Bermuda Grass, Tissue Roll, Plastic Bottle
+            if (model2Int != null && model2Labels.isNotEmpty()) {
+                classifyWithModel(bitmap, model2Int, model2Labels)?.let { (label, score) ->
                     mapToCategory(label)?.let { cat ->
                         candidates.add(PredictedItem(label, score, cat))
                     }
@@ -374,10 +406,10 @@ class ScannerActivity : ComponentActivity() {
 
     /**
      * Map raw labels to our 3 item categories.
-     * - PLASTIC: plastic cup
-     * - FRUIT: banana, mango
-     * - VEGETABLE: okra, eggplant
-     * Anything else (like orange) is ignored (null).
+     *
+     * - PLASTIC: plastic cup, plastic bottle
+     * - FRUIT: banana, mango, apple
+     * - VEGETABLE: okra, eggplant, ampalaya, kangkong, bermuda grass, tissue roll
      */
     private fun mapToCategory(rawLabel: String): Category? {
         val label = rawLabel.trim().lowercase()
@@ -387,15 +419,24 @@ class ScannerActivity : ComponentActivity() {
             label.contains("plastic") && label.contains("cup") ->
                 Category.PLASTIC
 
+            // Plastic bottle
+            label.contains("plastic") && label.contains("bottle") ->
+                Category.PLASTIC
+
             // Fruits
             label == "banana" || label.contains("banana") ||
-                    label == "mango"  || label.contains("mango") ->
+                    label == "mango"  || label.contains("mango")  ||
+                    label == "apple"  || label.contains("apple") ->
                 Category.FRUIT
 
-            // Vegetables
+            // Vegetables / biodegradable plants & tissue
             label == "okra" || label.contains("okra") ||
                     label == "eggplant" || label.contains("eggplant") ||
-                    label == "aubergine" ->
+                    label.contains("aubergine") ||
+                    label.contains("ampalaya") || label.contains("bitter gourd") ||
+                    label.contains("kangkong") || label.contains("water spinach") ||
+                    (label.contains("bermuda") && label.contains("grass")) ||
+                    label.contains("tissue") ->
                 Category.VEGETABLE
 
             else -> null
@@ -406,33 +447,40 @@ class ScannerActivity : ComponentActivity() {
      * Show waste category + bin color in kid-friendly form.
      *
      * Biodegradable (GREEN bin):
-     *  - Fruit (banana, mango)
-     *  - Vegetable (okra, eggplant)
+     *  - Fruits: banana, mango, apple
+     *  - Vegetables/organic: okra, eggplant, ampalaya, kangkong, bermuda grass, tissue roll
      *
      * Non-biodegradable (BLUE bin):
-     *  - Plastic cups
+     *  - Plastics: plastic cups, plastic bottles
      */
     private fun showCategoryResult(item: PredictedItem) {
         val label = item.label.trim().lowercase()
 
         when (item.category) {
             Category.PLASTIC -> {
+                val niceName = when {
+                    label.contains("bottle") -> "Plastic Bottle"
+                    label.contains("cup")    -> "Plastic Cup"
+                    else                     -> "Plastic Item"
+                }
+
                 // Non-biodegradable → BLUE bin
-                titleBar.text = "Plastic Cup"
+                titleBar.text = niceName
                 infoTitle.text = "Non-biodegradable waste"
                 infoText.text =
-                    "This is a PLASTIC CUP.\nPut it in the BLUE BIN."
+                    "This is a $niceName.\nPut it in the BLUE BIN."
                 infoRightIcon.setImageResource(R.drawable.ic_blue_bin)
             }
 
             Category.FRUIT -> {
                 // Biodegradable → GREEN bin
-                titleBar.text = "Fruit"
                 val name = when {
                     label.contains("banana") -> "banana"
                     label.contains("mango")  -> "mango"
+                    label.contains("apple")  -> "apple"
                     else -> "fruit"
                 }
+                titleBar.text = name.replaceFirstChar { it.uppercase() }
                 infoTitle.text = "Biodegradable waste"
                 infoText.text =
                     "This is a $name.\nPut peels and leftovers in the GREEN BIN."
@@ -441,12 +489,16 @@ class ScannerActivity : ComponentActivity() {
 
             Category.VEGETABLE -> {
                 // Biodegradable → GREEN bin
-                titleBar.text = "Vegetable"
                 val name = when {
                     label.contains("okra") -> "okra"
                     label.contains("eggplant") || label.contains("aubergine") -> "eggplant"
+                    label.contains("ampalaya") || label.contains("bitter gourd") -> "ampalaya"
+                    label.contains("kangkong") || label.contains("water spinach") -> "kangkong"
+                    label.contains("bermuda") && label.contains("grass") -> "bermuda grass"
+                    label.contains("tissue") -> "tissue roll"
                     else -> "vegetable"
                 }
+                titleBar.text = name.replaceFirstChar { it.uppercase() }
                 infoTitle.text = "Biodegradable waste"
                 infoText.text =
                     "This is $name.\nPut scraps in the GREEN BIN."
