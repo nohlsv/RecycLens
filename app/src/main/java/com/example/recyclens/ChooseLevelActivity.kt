@@ -37,13 +37,13 @@ class ChooseLevelActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        // All three buttons open the same game for now
-        btnEasy.setOnClickListener   { openGame() }
-        btnMedium.setOnClickListener { openGame() }
-        btnHard.setOnClickListener   { openGame() }
+        // pass level 1/2/3 using the SAME key "extra_level"
+        btnEasy.setOnClickListener   { openGame(1) }
+        btnMedium.setOnClickListener { openGame(2) }
+        btnHard.setOnClickListener   { openGame(3) }
     }
 
-    private fun openGame() {
+    private fun openGame(level: Int) {
         val target = when (gameType) {
             GameSelectActivity.GAME_STREET_CLEANUP ->
                 StreetCleanupActivity::class.java
@@ -53,6 +53,8 @@ class ChooseLevelActivity : AppCompatActivity() {
                 TrashSortingActivity::class.java
         }
 
-        startActivity(Intent(this, target))
+        val intent = Intent(this, target)
+            .putExtra("extra_level", level)   // <- NO reference to ChooseLevelActivity.Companion
+        startActivity(intent)
     }
 }

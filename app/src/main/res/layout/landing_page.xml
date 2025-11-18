@@ -63,7 +63,7 @@
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
-            android:src="@drawable/trashbins" />
+            android:src="@drawable/trashbins1" />
     </LinearLayout>
 
     <!-- START button defined inline -->
