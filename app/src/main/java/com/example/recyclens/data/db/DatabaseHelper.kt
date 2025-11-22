@@ -6,7 +6,11 @@ import android.database.sqlite.SQLiteOpenHelper
 
 class DatabaseHelper private constructor(ctx: Context) :
 
-    SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSION) {
+// Original line (error-causing):
+// SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSION) {
+
+// Corrected line (Solution):
+    SQLiteOpenHelper(ctx, Companion.DB_NAME, null, Companion.DB_VERSION) {
 
     companion object {
         private const val DB_NAME = "recyclens_schema.db"
