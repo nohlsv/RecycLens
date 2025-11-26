@@ -3,25 +3,23 @@ package com.example.recyclens.data.db
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.io.File
+import java.io.FileOutputStream
 
 class DatabaseHelper private constructor(ctx: Context) :
-
-// Original line (error-causing):
-// SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSION) {
-
-// Corrected line (Solution):
-    SQLiteOpenHelper(ctx, Companion.DB_NAME, null, Companion.DB_VERSION) {
+    SQLiteOpenHelper(ctx, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
-        private const val DB_NAME = "recyclens_schema.db"
-        private const val DB_VERSION = 1
+        private const val DATABASE_NAME = "recyclens_schema.db"
+        private const val DATABASE_VERSION = 1
 
         @Volatile
         private var INSTANCE: DatabaseHelper? = null
 
-        fun get(ctx: Context): DatabaseHelper =
+        fun getInstance(context: Context): DatabaseHelper =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: DatabaseHelper(ctx.applicationContext).also {
+                INSTANCE ?: DatabaseHelper(context.applicationContext).also {
+                    // Our Database is bundled as an asset, so we need to copy it
                     it.copyIfNeeded()
                     INSTANCE = it
                 }
@@ -31,22 +29,27 @@ class DatabaseHelper private constructor(ctx: Context) :
     private val appContext = ctx.applicationContext
 
     private fun copyIfNeeded() {
-        val dbFile = appContext.getDatabasePath(DB_NAME)
-        if (dbFile.exists()) return
+        val dbFile = appContext.getDatabasePath(DATABASE_NAME)
+        if (dbFile.exists()) {
+            return
+        }
 
+        // Make sure the directory exists
         dbFile.parentFile?.mkdirs()
-        appContext.assets.open(DB_NAME).use { input ->
-            dbFile.outputStream().use { output ->
-                input.copyTo(output)
+
+        // Copy the database from the assets folder
+        appContext.assets.open("databases/$DATABASE_NAME").use { inputStream ->
+            dbFile.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
             }
         }
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        // Do nothing here because DB is already pre-populated
+        // The database is pre-populated, so we don't need to create tables here.
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Handle upgrades later if needed
+        // Handle database upgrades here if the schema changes in future versions.
     }
 }
