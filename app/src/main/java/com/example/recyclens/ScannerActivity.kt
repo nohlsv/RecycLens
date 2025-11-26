@@ -47,11 +47,17 @@ class ScannerActivity : ComponentActivity() {
     private var capturedView: ImageView? = null
     private var showingCaptured = false
 
+    // ------- MODEL 2: old fruits / veggies / plastic -------
     private var model2Interpreter: Interpreter? = null
     private var model2Labels: List<String> = emptyList()
-
     private val MODEL2 = "model2.tflite"
     private val MODEL2_LABELS_FILE = "model2_labels.txt"
+
+    // ------- MODEL 3: new leaves / grass / styro -------
+    private var extraInterpreter: Interpreter? = null
+    private var extraLabels: List<String> = emptyList()
+    private val EXTRA_MODEL = "model.tflite"
+    private val EXTRA_LABELS_FILE = "model_labels.txt"
 
     private val INPUT_SIZE = 224
     private val THRESHOLD = 0.60f
@@ -109,6 +115,7 @@ class ScannerActivity : ComponentActivity() {
         super.onDestroy()
         cameraExecutor.shutdown()
         model2Interpreter?.close()
+        extraInterpreter?.close()
     }
 
     private fun ensureCameraReady() {
@@ -189,10 +196,13 @@ class ScannerActivity : ComponentActivity() {
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
 
+    // ----------------- LOAD BOTH MODELS -----------------
+
     private fun initModels() {
         try {
-            val mapped = loadModelMapped(MODEL2)
-            model2Interpreter = Interpreter(mapped, Interpreter.Options())
+            // main model2
+            val mapped2 = loadModelMapped(MODEL2)
+            model2Interpreter = Interpreter(mapped2, Interpreter.Options())
             model2Labels = assets.open(MODEL2_LABELS_FILE)
                 .bufferedReader()
                 .readLines()
@@ -202,10 +212,23 @@ class ScannerActivity : ComponentActivity() {
             model2Labels = emptyList()
         }
 
-        if (model2Interpreter == null) {
+        try {
+            // extra model for leaves / grass / styrofoam
+            val mappedExtra = loadModelMapped(EXTRA_MODEL)
+            extraInterpreter = Interpreter(mappedExtra, Interpreter.Options())
+            extraLabels = assets.open(EXTRA_LABELS_FILE)
+                .bufferedReader()
+                .readLines()
+                .filter { it.isNotBlank() }
+        } catch (_: Exception) {
+            extraInterpreter = null
+            extraLabels = emptyList()
+        }
+
+        if (model2Interpreter == null && extraInterpreter == null) {
             Toast.makeText(
                 this,
-                "I can't load my model. Please check the .tflite and .txt files in assets.",
+                "I can't load my models. Please check the .tflite and .txt files in assets.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -223,10 +246,15 @@ class ScannerActivity : ComponentActivity() {
         }
     }
 
-    private fun runRecognitionIfAvailable(bitmap: Bitmap) {
-        val model2Int = model2Interpreter
+    // ----------------- RUN BOTH MODELS -----------------
 
-        if (model2Int == null || model2Labels.isEmpty()) {
+    private fun runRecognitionIfAvailable(bitmap: Bitmap) {
+        val mainInt = model2Interpreter
+        val extraInt = extraInterpreter
+
+        if ((mainInt == null || model2Labels.isEmpty()) &&
+            (extraInt == null || extraLabels.isEmpty())
+        ) {
             titleBar.text = "Photo Loaded"
             infoTitle.text = "Helper is sleeping"
             infoText.text  = "Ask your teacher to check the app files."
@@ -236,13 +264,31 @@ class ScannerActivity : ComponentActivity() {
 
         titleBar.text = "Looking closely..."
         infoTitle.text = "Let me check"
-        infoText.text  = "I’m checking if this is fruit, vegetable, or plastic."
+        infoText.text  = "I’m checking what kind of waste this is."
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
 
         cameraExecutor.execute {
-            val top2 = classifyWithModel(bitmap, model2Int, model2Labels)
-            val result = top2?.let { chooseFinalLabel(it) }
-            val best = result?.let { (label, score) ->
+            var bestPair: Pair<String, Float>? = null
+
+            // run model2 if available
+            if (mainInt != null && model2Labels.isNotEmpty()) {
+                val pred2 = classifyWithModel(bitmap, mainInt, model2Labels)
+                val res2 = pred2?.let { chooseFinalLabel(it) }
+                if (res2 != null && (bestPair == null || res2.second > bestPair!!.second)) {
+                    bestPair = res2
+                }
+            }
+
+            // run extra model if available
+            if (extraInt != null && extraLabels.isNotEmpty()) {
+                val predExtra = classifyWithModel(bitmap, extraInt, extraLabels)
+                val resExtra = predExtra?.let { chooseFinalLabelSimple(it) }
+                if (resExtra != null && (bestPair == null || resExtra.second > bestPair!!.second)) {
+                    bestPair = resExtra
+                }
+            }
+
+            val best = bestPair?.let { (label, score) ->
                 mapToCategory(label)?.let { cat ->
                     PredictedItem(label, score, cat)
                 }
@@ -262,6 +308,8 @@ class ScannerActivity : ComponentActivity() {
         }
     }
 
+    // ----------------- DATA CLASSES -----------------
+
     private data class PredictedItem(
         val label: String,
         val confidence: Float,
@@ -278,6 +326,8 @@ class ScannerActivity : ComponentActivity() {
         val secondLabel: String?,
         val secondScore: Float?
     )
+
+    // ----------------- CLASSIFICATION HELPERS -----------------
 
     private fun cropCenterSquare(src: Bitmap): Bitmap {
         val size = minOf(src.width, src.height)
@@ -337,6 +387,7 @@ class ScannerActivity : ComponentActivity() {
         return Top2Prediction(bestLabel, bestScore, secondLabel, secondScoreFinal)
     }
 
+    // original chooseFinalLabel (handles bottle vs cup margin)
     private fun chooseFinalLabel(pred: Top2Prediction): Pair<String, Float>? {
         if (pred.bestScore < THRESHOLD) return null
 
@@ -358,10 +409,27 @@ class ScannerActivity : ComponentActivity() {
         return finalLabel to pred.bestScore
     }
 
+    // simpler version: no special bottle/cup logic
+    private fun chooseFinalLabelSimple(pred: Top2Prediction): Pair<String, Float>? {
+        if (pred.bestScore < THRESHOLD) return null
+        return pred.bestLabel to pred.bestScore
+    }
+
+    // ----------------- LABEL → CATEGORY (includes new labels) -----------------
+
     private fun mapToCategory(rawLabel: String): Category? {
         val label = rawLabel.trim().lowercase()
 
         return when {
+            // NEW: leaves & grass are biodegradable (treat as VEGETABLE)
+            label.contains("leave") || label.contains("leaves") -> Category.VEGETABLE
+            label.contains("grass") -> Category.VEGETABLE
+
+            // NEW: styrofoam tray = non-biodegradable -> PLASTIC / BLUE BIN
+            label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
+                Category.PLASTIC
+
+            // old mappings
             label.contains("ampalaya") -> Category.VEGETABLE
             label.contains("kangkong") -> Category.VEGETABLE
             label.contains("apple") -> Category.FRUIT
@@ -377,12 +445,16 @@ class ScannerActivity : ComponentActivity() {
         }
     }
 
+    // ----------------- SHOW RESULT (BINS) -----------------
+
     private fun showCategoryResult(item: PredictedItem) {
         val label = item.label.trim().lowercase()
 
         when (item.category) {
             Category.PLASTIC -> {
                 val niceName = when {
+                    label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
+                        "Styrofoam Tray"
                     label.contains("bottle") -> "Plastic Bottle"
                     label.contains("cup")    -> "Plastic Cup"
                     else                     -> "Plastic Item"
@@ -410,6 +482,10 @@ class ScannerActivity : ComponentActivity() {
 
             Category.VEGETABLE -> {
                 val name = when {
+                    // NEW: leaves / grass
+                    label.contains("leave") || label.contains("leaves") -> "Leaves"
+                    label.contains("grass") && !label.contains("bermuda") -> "Grass"
+
                     label.contains("okra") -> "Okra"
                     label.contains("eggplant") -> "Eggplant"
                     label.contains("ampalaya") -> "Ampalaya"
@@ -427,6 +503,8 @@ class ScannerActivity : ComponentActivity() {
         }
     }
 }
+
+// -------- helper remains the same --------
 
 private fun decodeBitmapFromUriSafely(
     resolver: ContentResolver,

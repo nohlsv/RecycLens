@@ -35,7 +35,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.6.11" // for Kotlin 2.0.x
+        kotlinCompilerExtensionVersion = "1.6.11" 
     }
 
     // ✅ Use Java 17 with AGP 8.x
