@@ -2,15 +2,14 @@ package com.example.recyclens.data
 
 import android.content.Context
 import android.database.Cursor
-import android.util.Log
-// NOTE: Verify this import path for your DatabaseHelper
 import com.example.recyclens.data.db.DatabaseHelper
 import com.example.recyclens.data.model.WasteCategory
 import com.example.recyclens.data.model.WasteMaterial
 
 class ContentRepository(context: Context) {
 
-    private val dbHelper = DatabaseHelper.get(context)
+    // Use the singleton instance
+    private val dbHelper: DatabaseHelper = DatabaseHelper.getInstance(context)
 
     // Helper function to safely read String from cursor (handles NULL columns)
     private fun Cursor.getStringOrNull(columnName: String): String? {
@@ -22,10 +21,10 @@ class ContentRepository(context: Context) {
     fun getAllCategories(): List<WasteCategory> {
         val categories = mutableListOf<WasteCategory>()
         val db = dbHelper.readableDatabase
-        val query = "SELECT category_id, name, bin_color, icon_path, description FROM waste_category"
+        val query =
+            "SELECT category_id, name, bin_color, icon_path, description FROM waste_category"
 
-        db.rawQuery(query, null).use { cursor ->
-            // Get column indices once for efficiency
+        db.rawQuery(query, null).use { cursor: Cursor ->
             val idIndex = cursor.getColumnIndexOrThrow("category_id")
             val nameIndex = cursor.getColumnIndexOrThrow("name")
 
@@ -49,7 +48,7 @@ class ContentRepository(context: Context) {
         val db = dbHelper.readableDatabase
         val query = "SELECT material_id, name, image, category_id FROM waste_material"
 
-        db.rawQuery(query, null).use { cursor ->
+        db.rawQuery(query, null).use { cursor: Cursor ->
             val idIndex = cursor.getColumnIndexOrThrow("material_id")
             val nameIndex = cursor.getColumnIndexOrThrow("name")
             val categoryIdIndex = cursor.getColumnIndexOrThrow("category_id")
