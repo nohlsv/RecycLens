@@ -5,18 +5,19 @@ plugins {
 }
 
 android {
-    namespace = "com.example.recyclens"
+    // 🔹 NEW PACKAGE / NAMESPACE
+    namespace = "ph.recyclens.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.recyclens"
+        // 🔹 MUST MATCH THE NEW ONE
+        applicationId = "ph.recyclens.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
 
     buildTypes {
         release {
@@ -35,17 +36,15 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.6.11" 
+        kotlinCompilerExtensionVersion = "1.6.11"
     }
 
-    // ✅ Use Java 17 with AGP 8.x
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
 
-    // ✅ Replace deprecated aaptOptions
     androidResources {
         noCompress += listOf("tflite")
     }
@@ -58,7 +57,6 @@ android {
 }
 
 dependencies {
-    // Core / Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -77,31 +75,24 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // View system
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
-    // CameraX
     val cameraX = "1.3.4"
     implementation("androidx.camera:camera-core:$cameraX")
     implementation("androidx.camera:camera-camera2:$cameraX")
     implementation("androidx.camera:camera-lifecycle:$cameraX")
     implementation("androidx.camera:camera-view:$cameraX")
 
-    // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
 
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-
-    // ✅ Optional: tiny helper for raw SQLite (no Room)
     implementation("androidx.sqlite:sqlite:2.4.0")
 
-    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
