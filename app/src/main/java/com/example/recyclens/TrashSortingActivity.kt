@@ -175,7 +175,10 @@ class TrashSortingActivity : AppCompatActivity() {
             return
         }
 
-        val item = currentQueue.removeFirst()
+        // ❌ old: val item = currentQueue.removeFirst()
+        // ✅ new: use removeAt(0) for compatibility with Android 14/15
+        val item = currentQueue[0]
+        currentQueue.removeAt(0)
 
         // Container for image + label
         val container = LinearLayout(this).apply {
