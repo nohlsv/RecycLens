@@ -6,7 +6,6 @@ import android.content.Intent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
-import ph.recyclens.app.R
 
 object BottomBar {
     enum class Tab { SCAN, PLAY }

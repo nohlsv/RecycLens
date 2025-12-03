@@ -16,7 +16,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import ph.recyclens.app.R
 
 class StreetCleanupActivity : AppCompatActivity() {
 
@@ -68,12 +67,12 @@ class StreetCleanupActivity : AppCompatActivity() {
         btnStart = findViewById(R.id.btnStartStreet)
         tvLevel = findViewById(R.id.tvLevel)
 
-        // bins are the green_bin.png and blue_bin.png ImageViews in your XML
         bioBin = findViewById(R.id.binGreenStreet)
         nonBioBin = findViewById(R.id.binBlueStreet)
 
         findViewById<ImageButton>(R.id.btnBackStreet).setOnClickListener {
             timer?.cancel()
+            timer = null
             finish()
         }
 
@@ -89,12 +88,11 @@ class StreetCleanupActivity : AppCompatActivity() {
             else -> "Easy"
         }
 
-        // Start button always restarts the whole game
         btnStart.setOnClickListener {
             startNewGame()
         }
 
-        // Show tutorial on first open
+        // Show tutorial first time
         showInstructionDialog()
     }
 
@@ -119,6 +117,7 @@ class StreetCleanupActivity : AppCompatActivity() {
     /** Called every time the Start button is pressed. */
     private fun startNewGame() {
         timer?.cancel()
+        timer = null
         gameArea.removeAllViews()
         remainingItems = 0
 
@@ -140,9 +139,11 @@ class StreetCleanupActivity : AppCompatActivity() {
                 textSize = 18f
                 setTextColor(Color.WHITE)
                 setShadowLayer(4f, 0f, 0f, Color.BLACK)
-                text = "Time: 00"
             }
+        }
 
+        // Make sure it’s attached to gameArea (important after removeAllViews)
+        if (tvTimer.parent == null) {
             val lpTimer = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -151,14 +152,17 @@ class StreetCleanupActivity : AppCompatActivity() {
             lpTimer.topMargin = dp(12)
             lpTimer.marginEnd = dp(12)
             gameArea.addView(tvTimer, lpTimer)
-        } else {
-            tvTimer.text = "Time: 00"
         }
+
+        tvTimer.text = "Time: 00"
     }
 
     private fun createFeedbackCircle() {
         if (feedbackCircle == null) {
-            feedbackCircle = View(this).apply { alpha = 0f }
+            feedbackCircle = View(this)
+        }
+
+        if (feedbackCircle?.parent == null) {
             val lp = FrameLayout.LayoutParams(
                 dp(24),
                 dp(24),
@@ -166,9 +170,9 @@ class StreetCleanupActivity : AppCompatActivity() {
             )
             lp.topMargin = dp(8)
             gameArea.addView(feedbackCircle, lp)
-        } else {
-            feedbackCircle?.alpha = 0f
         }
+
+        feedbackCircle?.alpha = 0f
     }
 
     private fun showFeedbackCircle(isCorrect: Boolean) {
@@ -197,6 +201,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             ?.start()
     }
 
+    // SAFE: no more Random range is empty
     private fun populateTrash() {
         val count = when (level) {
             1 -> 5   // Easy
@@ -208,12 +213,26 @@ class StreetCleanupActivity : AppCompatActivity() {
         val selected = allItems.shuffled().take(count)
         remainingItems = selected.size
 
-        val areaWidth = gameArea.width
-        val areaHeight = gameArea.height
+        val areaWidth = if (gameArea.width > 0) gameArea.width else gameArea.measuredWidth
+        val areaHeight = if (gameArea.height > 0) gameArea.height else gameArea.measuredHeight
+
+        if (areaWidth <= 0 || areaHeight <= 0) {
+            remainingItems = 0
+            return
+        }
 
         val size = dp(70)
+        val sideMargin = dp(16)
         val topMarginLimit = dp(40)
-        val bottomReserved = dp(150) // keep space above bins
+        val bottomReserved = dp(150)
+
+        val minX = sideMargin
+        val rawMaxX = areaWidth - size - sideMargin
+        val maxXExclusive = if (rawMaxX <= minX) minX + 1 else rawMaxX
+
+        val minY = topMarginLimit
+        val rawMaxY = areaHeight - size - bottomReserved
+        val maxYExclusive = if (rawMaxY <= minY) minY + 1 else rawMaxY
 
         for (item in selected) {
             val iv = ImageView(this).apply {
@@ -224,11 +243,8 @@ class StreetCleanupActivity : AppCompatActivity() {
 
             val lp = FrameLayout.LayoutParams(size, size)
 
-            val maxX = areaWidth - size - dp(16)
-            val maxY = areaHeight - size - bottomReserved
-
-            val randomX = kotlin.random.Random.nextInt(dp(16), maxX.coerceAtLeast(dp(16)))
-            val randomY = kotlin.random.Random.nextInt(topMarginLimit, maxY.coerceAtLeast(topMarginLimit))
+            val randomX = kotlin.random.Random.nextInt(minX, maxXExclusive)
+            val randomY = kotlin.random.Random.nextInt(minY, maxYExclusive)
 
             lp.leftMargin = randomX
             lp.topMargin = randomY
@@ -242,9 +258,9 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun startTimer() {
         val seconds = when (level) {
-            1 -> 90   // Easy
-            2 -> 60   // Medium
-            3 -> 45   // Hard
+            1 -> 90
+            2 -> 60
+            3 -> 45
             else -> 90
         }
 
@@ -255,12 +271,11 @@ class StreetCleanupActivity : AppCompatActivity() {
             }
 
             override fun onFinish() {
+                // If already finished (all trash sorted), don’t show fail
+                if (remainingItems <= 0) return
+
                 tvTimer.text = "Time: 00"
-                if (remainingItems > 0) {
-                    showFailDialog()
-                } else {
-                    showSuccessDialog()
-                }
+                showFailDialog()
             }
         }.start()
     }
@@ -274,10 +289,8 @@ class StreetCleanupActivity : AppCompatActivity() {
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    // remember original position
                     startX = v.x
                     startY = v.y
-
                     dX = v.x - event.rawX
                     dY = v.y - event.rawY
                     true
@@ -296,10 +309,6 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Uses the raw touch position vs. the GREEN and BLUE bin rects.
-     * If dropped outside both bins → animate back to (startX, startY).
-     */
     private fun handleDrop(
         view: View,
         dropRawX: Int,
@@ -317,7 +326,6 @@ class StreetCleanupActivity : AppCompatActivity() {
         val droppedOnBio = bioRect.contains(dropRawX, dropRawY)
         val droppedOnNonBio = nonBioRect.contains(dropRawX, dropRawY)
 
-        // ❌ Not on any bin → snap back to original spot
         if (!droppedOnBio && !droppedOnNonBio) {
             view.animate()
                 .x(startX)
@@ -343,10 +351,10 @@ class StreetCleanupActivity : AppCompatActivity() {
 
             if (remainingItems <= 0) {
                 timer?.cancel()
+                timer = null
                 showSuccessDialog()
             }
         } else {
-            // Wrong bin: show hint but keep the trash where it is (they can drag again)
             Toast.makeText(
                 this,
                 if (item.isBiodegradable)
@@ -361,7 +369,7 @@ class StreetCleanupActivity : AppCompatActivity() {
     private fun showFloodAnimation() {
         if (floodView == null) {
             floodView = View(this).apply {
-                setBackgroundColor(Color.parseColor("#8800B0FF")) // semi-transparent water
+                setBackgroundColor(Color.parseColor("#8800B0FF"))
             }
             rootLayout.addView(
                 floodView,
@@ -425,5 +433,6 @@ class StreetCleanupActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         timer?.cancel()
+        timer = null
     }
 }

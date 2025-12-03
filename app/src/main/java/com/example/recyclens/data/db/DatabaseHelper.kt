@@ -3,15 +3,13 @@ package com.example.recyclens.data.db
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import java.io.File
-import java.io.FileOutputStream
 
 class DatabaseHelper private constructor(ctx: Context) :
     SQLiteOpenHelper(ctx, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
-        private const val DATABASE_NAME = "recyclens_schema.db"
-        private const val DATABASE_VERSION = 1
+        const val DATABASE_NAME = "recyclens_schema.db"
+        const val DATABASE_VERSION = 1
 
         @Volatile
         private var INSTANCE: DatabaseHelper? = null
@@ -19,37 +17,99 @@ class DatabaseHelper private constructor(ctx: Context) :
         fun getInstance(context: Context): DatabaseHelper =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: DatabaseHelper(context.applicationContext).also {
-                    // Our Database is bundled as an asset, so we need to copy it
-                    it.copyIfNeeded()
                     INSTANCE = it
                 }
             }
     }
 
-    private val appContext = ctx.applicationContext
-
-    private fun copyIfNeeded() {
-        val dbFile = appContext.getDatabasePath(DATABASE_NAME)
-        if (dbFile.exists()) {
-            return
-        }
-
-        // Make sure the directory exists
-        dbFile.parentFile?.mkdirs()
-
-        // Copy the database from the assets folder
-        appContext.assets.open("databases/$DATABASE_NAME").use { inputStream ->
-            dbFile.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-    }
-
     override fun onCreate(db: SQLiteDatabase) {
-        // The database is pre-populated, so we don't need to create tables here.
+        // --- Tables used in your repositories ---
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS waste_category (
+                category_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL,
+                bin_color     TEXT,
+                icon_path     TEXT,
+                description   TEXT
+            );
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS waste_material (
+                material_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL,
+                image         TEXT,
+                category_id   INTEGER NOT NULL,
+                FOREIGN KEY(category_id) REFERENCES waste_category(category_id)
+            );
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS game (
+                game_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                game_key    TEXT NOT NULL UNIQUE,
+                game_name   TEXT NOT NULL,
+                description TEXT
+            );
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS game_level (
+                level_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                game_id      INTEGER NOT NULL,
+                level_number INTEGER NOT NULL,
+                level_name   TEXT NOT NULL,
+                FOREIGN KEY(game_id) REFERENCES game(game_id)
+            );
+            """.trimIndent()
+        )
+
+        // --- Optional: seed some basic data so screens are not empty ---
+
+        db.execSQL(
+            """
+            INSERT INTO game (game_key, game_name, description) VALUES
+            ('trash_sort',    'Trash Sorting',    'Drag items into the correct bins'),
+            ('street_cleanup','Street Cleanup',   'Clean the street by sorting trash');
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            INSERT INTO game_level (game_id, level_number, level_name)
+            VALUES
+            (1, 1, 'Easy'),
+            (1, 2, 'Medium'),
+            (1, 3, 'Hard'),
+            (2, 1, 'Easy'),
+            (2, 2, 'Medium'),
+            (2, 3, 'Hard');
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            INSERT INTO waste_category (name, bin_color, description) VALUES
+            ('Biodegradable',  'green',  'Food scraps and other organic waste'),
+            ('Recyclable',     'blue',   'Plastic bottles, cans, paper'),
+            """.trimIndent()
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Handle database upgrades here if the schema changes in future versions.
+        // simplest: drop and recreate if you ever bump DATABASE_VERSION
+        db.execSQL("DROP TABLE IF EXISTS game_level;")
+        db.execSQL("DROP TABLE IF EXISTS game;")
+        db.execSQL("DROP TABLE IF EXISTS waste_material;")
+        db.execSQL("DROP TABLE IF EXISTS waste_category;")
+        onCreate(db)
     }
 }
