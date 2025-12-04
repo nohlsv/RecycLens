@@ -1,68 +1,26 @@
-package com.example.recyclens.data
+package com.example.recyclens.data.model
 
 import android.content.Context
-import android.database.Cursor
-import com.example.recyclens.data.db.DatabaseHelper
-import com.example.recyclens.data.model.WasteCategory
-import com.example.recyclens.data.model.WasteMaterial
+import com.example.recyclens.data.db.AppDatabase
+import kotlinx.coroutines.flow.Flow
 
 class ContentRepository(context: Context) {
 
-    // Use the singleton instance
-    private val dbHelper: DatabaseHelper = DatabaseHelper.getInstance(context)
+    // 1. Get the DAO from the AppDatabase
+    private val dao = AppDatabase.getDatabase(context).recyclensDao()
 
-    // Helper function to safely read String from cursor (handles NULL columns)
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndex(columnName)
-        return if (index >= 0 && !isNull(index)) getString(index) else null
+    // 2. FOR THE SCANNER: Get a material by its English name (e.g., "Plastic Bottle")
+    suspend fun getMaterialByName(name: String): WasteMaterial? {
+        return dao.getMaterialByName(name)
     }
 
-    // --- FETCH CATEGORIES ---
-    fun getAllCategories(): List<WasteCategory> {
-        val categories = mutableListOf<WasteCategory>()
-        val db = dbHelper.readableDatabase
-        val query =
-            "SELECT category_id, name, bin_color, icon_path, description FROM waste_category"
-
-        db.rawQuery(query, null).use { cursor: Cursor ->
-            val idIndex = cursor.getColumnIndexOrThrow("category_id")
-            val nameIndex = cursor.getColumnIndexOrThrow("name")
-
-            while (cursor.moveToNext()) {
-                val category = WasteCategory(
-                    categoryId = cursor.getInt(idIndex),
-                    name = cursor.getString(nameIndex),
-                    binColor = cursor.getStringOrNull("bin_color"),
-                    iconPath = cursor.getStringOrNull("icon_path"),
-                    description = cursor.getStringOrNull("description")
-                )
-                categories.add(category)
-            }
-        }
-        return categories
+    // 3. FOR THE GAME SELECT: Get all categories (Green vs Blue)
+    fun getAllCategories(): Flow<List<WasteCategory>> {
+        return dao.getAllCategories()
     }
 
-    // --- FETCH MATERIALS ---
-    fun getAllMaterials(): List<WasteMaterial> {
-        val materials = mutableListOf<WasteMaterial>()
-        val db = dbHelper.readableDatabase
-        val query = "SELECT material_id, name, image, category_id FROM waste_material"
-
-        db.rawQuery(query, null).use { cursor: Cursor ->
-            val idIndex = cursor.getColumnIndexOrThrow("material_id")
-            val nameIndex = cursor.getColumnIndexOrThrow("name")
-            val categoryIdIndex = cursor.getColumnIndexOrThrow("category_id")
-
-            while (cursor.moveToNext()) {
-                val material = WasteMaterial(
-                    materialId = cursor.getInt(idIndex),
-                    name = cursor.getString(nameIndex),
-                    image = cursor.getStringOrNull("image"),
-                    categoryId = cursor.getInt(categoryIdIndex)
-                )
-                materials.add(material)
-            }
-        }
-        return materials
+    // 4. FOR THE GAMES: Get items specific to a bin
+    fun getMaterialsByCategory(categoryId: Int): Flow<List<WasteMaterial>> {
+        return dao.getMaterialsByCategory(categoryId)
     }
 }
