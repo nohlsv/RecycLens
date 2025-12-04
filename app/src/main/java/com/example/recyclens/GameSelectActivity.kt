@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import ph.recyclens.app.R
 
 class GameSelectActivity : AppCompatActivity() {
 

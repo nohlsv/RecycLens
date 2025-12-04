@@ -30,7 +30,6 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import ph.recyclens.app.R
 
 class ScannerActivity : ComponentActivity() {
 

@@ -15,7 +15,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import ph.recyclens.app.R
 
 class TrashSortingActivity : AppCompatActivity() {
 
@@ -175,7 +174,10 @@ class TrashSortingActivity : AppCompatActivity() {
             return
         }
 
-        val item = currentQueue.removeFirst()
+        // ❌ old: val item = currentQueue.removeFirst()
+        // ✅ new: use removeAt(0) for compatibility with Android 14/15
+        val item = currentQueue[0]
+        currentQueue.removeAt(0)
 
         // Container for image + label
         val container = LinearLayout(this).apply {
