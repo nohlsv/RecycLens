@@ -53,7 +53,7 @@ class ScannerActivity : ComponentActivity() {
     private val MODEL2 = "model2.tflite"
     private val MODEL2_LABELS_FILE = "model2_labels.txt"
 
-    // ------- MODEL 3: new leaves / grass / styro -------
+    // ------- MODEL 3: new leaves / grass / styro / paper -------
     private var extraInterpreter: Interpreter? = null
     private var extraLabels: List<String> = emptyList()
     private val EXTRA_MODEL = "model.tflite"
@@ -200,7 +200,6 @@ class ScannerActivity : ComponentActivity() {
 
     private fun initModels() {
         try {
-            // main model2
             val mapped2 = loadModelMapped(MODEL2)
             model2Interpreter = Interpreter(mapped2, Interpreter.Options())
             model2Labels = assets.open(MODEL2_LABELS_FILE)
@@ -213,7 +212,6 @@ class ScannerActivity : ComponentActivity() {
         }
 
         try {
-            // extra model for leaves / grass / styrofoam
             val mappedExtra = loadModelMapped(EXTRA_MODEL)
             extraInterpreter = Interpreter(mappedExtra, Interpreter.Options())
             extraLabels = assets.open(EXTRA_LABELS_FILE)
@@ -316,8 +314,9 @@ class ScannerActivity : ComponentActivity() {
         val category: Category
     )
 
+    // BIO = biodegradable (leaves, grass, vegetables, tissue, paper, etc.)
     private enum class Category {
-        PLASTIC, FRUIT, VEGETABLE
+        PLASTIC, FRUIT, BIO
     }
 
     private data class Top2Prediction(
@@ -421,26 +420,30 @@ class ScannerActivity : ComponentActivity() {
         val label = rawLabel.trim().lowercase()
 
         return when {
-            // NEW: leaves & grass are biodegradable (treat as VEGETABLE)
-            label.contains("leave") || label.contains("leaves") -> Category.VEGETABLE
-            label.contains("grass") -> Category.VEGETABLE
+            // 🌿 Biodegradable: leaves, grass, tissue, paper
+            label.contains("leave") || label.contains("leaves") -> Category.BIO
+            label.contains("grass") -> Category.BIO              // includes bermuda grass → grass
+            label.contains("tissue") -> Category.BIO
+            label.contains("stationery") && label.contains("paper") -> Category.BIO
 
-            // NEW: styrofoam tray = non-biodegradable -> PLASTIC / BLUE BIN
+            // 🍃 Vegetables / other biodegradable from old model
+            label.contains("ampalaya") -> Category.BIO
+            label.contains("kangkong") -> Category.BIO
+            label.contains("okra") -> Category.BIO
+            label.contains("eggplant") -> Category.BIO
+
+            // 🍎 Fruits
+            label.contains("apple") -> Category.FRUIT
+            label.contains("banana") -> Category.FRUIT
+            label.contains("mango") -> Category.FRUIT
+
+            // 🧴 Non-biodegradable (plastic / wrappers / styro)
+            label.contains("snack") && label.contains("wrapper") -> Category.PLASTIC
             label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
                 Category.PLASTIC
-
-            // old mappings
-            label.contains("ampalaya") -> Category.VEGETABLE
-            label.contains("kangkong") -> Category.VEGETABLE
-            label.contains("apple") -> Category.FRUIT
-            label.contains("bermuda") && label.contains("grass") -> Category.VEGETABLE
-            label.contains("tissue") -> Category.VEGETABLE
             label.contains("bottle") -> Category.PLASTIC
-            label.contains("banana") -> Category.FRUIT
             label.contains("plastic") && label.contains("cup") -> Category.PLASTIC
-            label.contains("mango") -> Category.FRUIT
-            label.contains("okra") -> Category.VEGETABLE
-            label.contains("eggplant") -> Category.VEGETABLE
+
             else -> null
         }
     }
@@ -453,6 +456,7 @@ class ScannerActivity : ComponentActivity() {
         when (item.category) {
             Category.PLASTIC -> {
                 val niceName = when {
+                    label.contains("snack") && label.contains("wrapper") -> "Snack Wrapper"
                     label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
                         "Styrofoam Tray"
                     label.contains("bottle") -> "Plastic Bottle"
@@ -480,24 +484,22 @@ class ScannerActivity : ComponentActivity() {
                 infoRightIcon.setImageResource(R.drawable.ic_green_bin)
             }
 
-            Category.VEGETABLE -> {
+            Category.BIO -> {
                 val name = when {
-                    // NEW: leaves / grass
                     label.contains("leave") || label.contains("leaves") -> "Leaves"
-                    label.contains("grass") && !label.contains("bermuda") -> "Grass"
-
-                    label.contains("okra") -> "Okra"
-                    label.contains("eggplant") -> "Eggplant"
+                    label.contains("grass") -> "Grass"   // ✅ Bermuda grass will show as Grass
+                    label.contains("tissue") -> "Tissue"
+                    label.contains("stationery") && label.contains("paper") -> "Stationery Paper"
                     label.contains("ampalaya") -> "Ampalaya"
                     label.contains("kangkong") -> "Kangkong"
-                    label.contains("bermuda") && label.contains("grass") -> "Bermuda Grass"
-                    label.contains("tissue") -> "Tissue Roll"
-                    else -> "Vegetable"
+                    label.contains("okra") -> "Okra"
+                    label.contains("eggplant") -> "Eggplant"
+                    else -> "Biodegradable Waste"
                 }
                 titleBar.text = name
                 infoTitle.text = "Biodegradable waste"
                 infoText.text =
-                    "This is $name.\nPut scraps in the GREEN BIN."
+                    "This is $name.\nPut it in the GREEN BIN."
                 infoRightIcon.setImageResource(R.drawable.ic_green_bin)
             }
         }
