@@ -38,11 +38,17 @@ class StreetCleanupActivity : AppCompatActivity() {
     private var remainingItems = 0
     private var timer: CountDownTimer? = null
 
+    // For score & time tracking
+    private var totalItems: Int = 0
+    private var totalSeconds: Int = 0
+    private var secondsLeft: Int = 0
+
     private data class WasteItem(
         val drawableRes: Int,
         val isBiodegradable: Boolean
     )
 
+    // All trash icons used in the game
     private val allItems = listOf(
         WasteItem(R.drawable.ic_trash_banana, true),
         WasteItem(R.drawable.ic_trash_fruit, true),
@@ -52,7 +58,9 @@ class StreetCleanupActivity : AppCompatActivity() {
         WasteItem(R.drawable.ic_trash_plastic_cup, false),
         WasteItem(R.drawable.ic_trash_bottle, false),
         WasteItem(R.drawable.ic_trash_wrapper, false),
-        WasteItem(R.drawable.ic_trash_styro, false)
+        WasteItem(R.drawable.ic_trash_styro, false),
+        // NEW: Grass icon (biodegradable)
+        WasteItem(R.drawable.ic_trash_grass, true)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,8 +96,22 @@ class StreetCleanupActivity : AppCompatActivity() {
             else -> "Easy"
         }
 
+        // Start button with Yes/No validation (restart)
         btnStart.setOnClickListener {
-            startNewGame()
+            val gameRunning = (timer != null) || (remainingItems > 0)
+
+            if (gameRunning) {
+                AlertDialog.Builder(this)
+                    .setTitle("Restart game?")
+                    .setMessage("Do you want to reset the trash and the timer and start again?")
+                    .setPositiveButton("Yes") { _, _ ->
+                        startNewGame()
+                    }
+                    .setNegativeButton("No", null)
+                    .show()
+            } else {
+                startNewGame()
+            }
         }
 
         // Show tutorial first time
@@ -102,11 +124,12 @@ class StreetCleanupActivity : AppCompatActivity() {
             .setMessage(
                 "Hello, street cleaner!\n\n" +
                         "1. Look for the trash on the street.\n" +
-                        "2. GREEN bin = Biodegradable (nabubulok): food, fruit, leaves, paper, tissue.\n" +
-                        "3. BLUE bin = Non-biodegradable (hindi nabubulok): plastic cups, bottles, wrappers, styro.\n" +
-                        "4. Drag the trash and drop it on the correct bin.\n" +
-                        "5. Green circle = correct, red circle = wrong.\n" +
-                        "6. Clean all trash before the time is up!"
+                        "2. Each trash icon is labeled so you can see what it is (e.g., Banana Peel, Plastic Cup, Wrapper, Grass).\n" +
+                        "3. GREEN bin = Biodegradable (nabubulok): food, fruit, leaves, grass, paper, tissue.\n" +
+                        "4. BLUE bin = Non-biodegradable (hindi nabubulok): plastic cups, bottles, wrappers, styro.\n" +
+                        "5. Drag the trash and drop it on the correct bin.\n" +
+                        "6. Green circle = correct, red circle = wrong.\n" +
+                        "7. Clean all trash before the time is up!"
             )
             .setPositiveButton("Got it!") { dialog, _ ->
                 dialog.dismiss()
@@ -114,12 +137,15 @@ class StreetCleanupActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Called every time the Start button is pressed. */
+    /** Called every time the Start button is pressed (after confirmation if needed). */
     private fun startNewGame() {
         timer?.cancel()
         timer = null
         gameArea.removeAllViews()
         remainingItems = 0
+        totalItems = 0
+        totalSeconds = 0
+        secondsLeft = 0
 
         // Remove flood overlay if it was shown before
         floodView?.let { rootLayout.removeView(it) }
@@ -201,7 +227,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             ?.start()
     }
 
-    // SAFE: no more Random range is empty
+    // Populate trash icons for the level
     private fun populateTrash() {
         val count = when (level) {
             1 -> 5   // Easy
@@ -212,12 +238,14 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val selected = allItems.shuffled().take(count)
         remainingItems = selected.size
+        totalItems = remainingItems   // track score base
 
         val areaWidth = if (gameArea.width > 0) gameArea.width else gameArea.measuredWidth
         val areaHeight = if (gameArea.height > 0) gameArea.height else gameArea.measuredHeight
 
         if (areaWidth <= 0 || areaHeight <= 0) {
             remainingItems = 0
+            totalItems = 0
             return
         }
 
@@ -264,13 +292,18 @@ class StreetCleanupActivity : AppCompatActivity() {
             else -> 90
         }
 
+        totalSeconds = seconds
+        secondsLeft = seconds
+
         timer = object : CountDownTimer(seconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 val s = (millisUntilFinished / 1000).toInt()
+                secondsLeft = s
                 tvTimer.text = String.format("Time: %02d", s)
             }
 
             override fun onFinish() {
+                secondsLeft = 0
                 // If already finished (all trash sorted), don’t show fail
                 if (remainingItems <= 0) return
 
@@ -394,9 +427,23 @@ class StreetCleanupActivity : AppCompatActivity() {
     }
 
     private fun showSuccessDialog() {
+        val levelName = when (level) {
+            1 -> "Easy"
+            2 -> "Medium"
+            3 -> "Hard"
+            else -> "Easy"
+        }
+
+        // On Easy, totalItems will be 5 (5 items spawned)
+        val scoreText = "Score: $totalItems / $totalItems trash sorted"
+        val timeText = "Time left: $secondsLeft second(s)"
+
         AlertDialog.Builder(this)
-            .setTitle("Great job!")
-            .setMessage("You collected and sorted all the trash correctly!\nThe street stayed clean.")
+            .setTitle("Level complete!")
+            .setMessage(
+                "You finished the $levelName level!\n\n" +
+                        "$scoreText\n$timeText"
+            )
             .setCancelable(false)
             .setPositiveButton("Play again") { _, _ ->
                 startNewGame()
@@ -410,10 +457,16 @@ class StreetCleanupActivity : AppCompatActivity() {
     private fun showFailDialog() {
         showFloodAnimation()
 
+        val sorted = totalItems - remainingItems
+        val timeUsed = totalSeconds - secondsLeft
+        val scoreText = "Score: $sorted / $totalItems trash sorted"
+        val timeText = "Time used: $timeUsed second(s)"
+
         AlertDialog.Builder(this)
             .setTitle("Oh no!")
             .setMessage(
-                "The drains got blocked and the street flooded because some trash was left.\n" +
+                "The drains got blocked and the street flooded because some trash was left.\n\n" +
+                        "$scoreText\n$timeText\n\n" +
                         "Try again and clean everything before the time runs out!"
             )
             .setCancelable(false)

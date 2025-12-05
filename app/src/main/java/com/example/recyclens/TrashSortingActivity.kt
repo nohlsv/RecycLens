@@ -44,7 +44,9 @@ class TrashSortingActivity : AppCompatActivity() {
         WasteItem(R.drawable.ic_trash_plastic_cup, false, "Plastic cup"),
         WasteItem(R.drawable.ic_trash_bottle,      false, "Plastic bottle"),
         WasteItem(R.drawable.ic_trash_wrapper,     false, "Candy wrapper"),
-        WasteItem(R.drawable.ic_trash_styro,       false, "Styrofoam box")
+        WasteItem(R.drawable.ic_trash_styro,       false, "Styrofoam box"),
+        // 🌿 Grass added here with label
+        WasteItem(R.drawable.ic_trash_grass, true, "Grass")
     )
 
     private var currentQueue: MutableList<WasteItem> = mutableListOf()
@@ -87,8 +89,22 @@ class TrashSortingActivity : AppCompatActivity() {
 
         resetScoreAndCircles(0)
 
+        // ✅ Start button with validation like StreetCleanup (but no timer here)
         btnStart.setOnClickListener {
-            startNewRound()
+            val roundRunning = (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
+
+            if (roundRunning) {
+                AlertDialog.Builder(this)
+                    .setTitle("Restart level?")
+                    .setMessage("Do you want to reset the trash and your score and start again?")
+                    .setPositiveButton("Yes") { _, _ ->
+                        startNewRound()
+                    }
+                    .setNegativeButton("No", null)
+                    .show()
+            } else {
+                startNewRound()
+            }
         }
 
         // Show instructions when screen opens
@@ -100,13 +116,14 @@ class TrashSortingActivity : AppCompatActivity() {
             .setTitle("How to play")
             .setMessage(
                 "Hello, little recycler!\n\n" +
-                        "1. Look at the trash picture and its name.\n" +
-                        "2. If it is food, fruit, leaves, paper, or tissue,\n" +
+                        "1. Look at the trash picture and its name (like Banana peel, Plastic cup, Grass).\n" +
+                        "2. If it is food, fruit, leaves, grass, paper, or tissue,\n" +
                         "   drag it to the GREEN bin.\n" +
                         "3. If it is plastic, bottle, wrapper, or styro,\n" +
                         "   drag it to the BLUE bin.\n" +
                         "4. Drop the trash inside a bin and let go.\n" +
-                        "5. Try to get many green circles!"
+                        "5. Each correct answer gives you a green circle.\n" +
+                        "6. Try to get all circles green!"
             )
             .setPositiveButton("Got it!") { dialog, _ ->
                 dialog.dismiss()
@@ -174,8 +191,7 @@ class TrashSortingActivity : AppCompatActivity() {
             return
         }
 
-        // ❌ old: val item = currentQueue.removeFirst()
-        // ✅ new: use removeAt(0) for compatibility with Android 14/15
+        // Use removeAt(0) for compatibility
         val item = currentQueue[0]
         currentQueue.removeAt(0)
 
