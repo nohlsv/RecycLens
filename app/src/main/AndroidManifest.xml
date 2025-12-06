@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Required for CameraX live preview -->
     <uses-permission android:name="android.permission.CAMERA" /> <!-- Optional: keep only when you implement gallery picker -->
@@ -22,27 +22,29 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RecycLens"
-        android:usesCleartextTraffic="false" >
+        android:usesCleartextTraffic="false">
+
+        <service
+            android:name=".MusicService"
+            android:enabled="true"
+            android:exported="false"></service>
 
         <activity
             android:name=".GameSelectActivity"
             android:exported="false" />
-
         <activity
             android:name=".ChooseLevelActivity"
             android:exported="false" />
-
         <activity
             android:name=".TrashSortingActivity"
             android:exported="false" />
-
         <activity
             android:name=".StreetCleanupActivity"
             android:exported="false" />
         <activity android:name=".ScannerActivity" />
         <activity
             android:name=".MainActivity"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

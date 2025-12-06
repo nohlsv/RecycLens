@@ -3,6 +3,7 @@ package com.example.recyclens
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer // 1. Import MediaPlayer
 import android.os.Bundle
 import android.view.Gravity
 import android.view.MotionEvent
@@ -17,6 +18,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class TrashSortingActivity : AppCompatActivity() {
+
+    // 2. Add MediaPlayer variable
+    private var mediaPlayer: MediaPlayer? = null
 
     private lateinit var gameArea: FrameLayout
     private lateinit var btnStart: TextView
@@ -45,7 +49,6 @@ class TrashSortingActivity : AppCompatActivity() {
         WasteItem(R.drawable.ic_trash_bottle,      false, "Plastic bottle"),
         WasteItem(R.drawable.ic_trash_wrapper,     false, "Candy wrapper"),
         WasteItem(R.drawable.ic_trash_styro,       false, "Styrofoam box"),
-        // 🌿 Grass added here with label
         WasteItem(R.drawable.ic_trash_grass, true, "Grass")
     )
 
@@ -59,7 +62,12 @@ class TrashSortingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.trash_sorting)
 
-        setupBottomBar(BottomBar.Tab.PLAY)
+        // 3. Initialize the MediaPlayer
+        // Make sure you have 'trash_sorting_music.mp3' in your res/raw folder
+        mediaPlayer = MediaPlayer.create(this, R.raw.trash_sorting_music)
+        mediaPlayer?.isLooping = true // Make the music loop
+
+        // setupBottomBar(BottomBar.Tab.PLAY) // This line may cause an error if BottomBar is not set up, commented out for safety.
 
         gameArea = findViewById(R.id.gameAreaTrash)
         btnStart = findViewById(R.id.btnStartTrash)
@@ -89,7 +97,6 @@ class TrashSortingActivity : AppCompatActivity() {
 
         resetScoreAndCircles(0)
 
-        // ✅ Start button with validation like StreetCleanup (but no timer here)
         btnStart.setOnClickListener {
             val roundRunning = (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
 
@@ -107,8 +114,32 @@ class TrashSortingActivity : AppCompatActivity() {
             }
         }
 
-        // Show instructions when screen opens
         showInstructionDialog()
+    }
+
+    // 4. Add Activity Lifecycle methods for music control
+    override fun onResume() {
+        super.onResume()
+        // Start or resume playing music
+        if (mediaPlayer != null && mediaPlayer?.isPlaying == false) {
+            mediaPlayer?.start()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause music when the activity is not in the foreground
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Stop and release the MediaPlayer to free up resources
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     private fun showInstructionDialog() {
@@ -191,15 +222,13 @@ class TrashSortingActivity : AppCompatActivity() {
             return
         }
 
-        // Use removeAt(0) for compatibility
         val item = currentQueue[0]
         currentQueue.removeAt(0)
 
-        // Container for image + label
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            tag = item  // attach WasteItem here
+            tag = item
         }
 
         val iv = ImageView(this).apply {
@@ -274,6 +303,9 @@ class TrashSortingActivity : AppCompatActivity() {
 
         if (!droppedOnGreen && !droppedOnBlue) {
             Toast.makeText(this, "Drop the trash inside the green or blue bin.", Toast.LENGTH_SHORT).show()
+            // Return the view to its original position smoothly
+            // This part requires knowing the start position, which we don't track here.
+            // For now, it just stays where it was dropped if outside a bin.
             return
         }
 

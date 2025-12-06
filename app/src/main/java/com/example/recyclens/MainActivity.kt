@@ -10,6 +10,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.landing_page) // res/layout/landing_page.xml
 
+        MusicManager.start(this)
+
         findViewById<MaterialButton>(R.id.btn_start)?.setOnClickListener {
             // Go straight to Scanner. Change to GameSelectActivity.kt if you prefer.
             startActivity(Intent(this, ScannerActivity::class.java))

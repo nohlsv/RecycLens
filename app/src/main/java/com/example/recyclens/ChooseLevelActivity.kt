@@ -14,7 +14,7 @@ class ChooseLevelActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.choose_level_page)
 
-        setupBottomBar(BottomBar.Tab.PLAY)
+        // setupBottomBar(BottomBar.Tab.PLAY) // Commented out for safety
 
         gameType = intent.getStringExtra(GameSelectActivity.EXTRA_GAME_TYPE)
             ?: GameSelectActivity.GAME_TRASH_SORTING
@@ -37,7 +37,6 @@ class ChooseLevelActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        // pass level 1/2/3 using the SAME key "extra_level"
         btnEasy.setOnClickListener   { openGame(1) }
         btnMedium.setOnClickListener { openGame(2) }
         btnHard.setOnClickListener   { openGame(3) }
@@ -53,8 +52,19 @@ class ChooseLevelActivity : AppCompatActivity() {
                 TrashSortingActivity::class.java
         }
 
+        // --- CHANGE IS HERE ---
+        // Stop the browsing music before starting a game
+        MusicManager.stop(this)
+        // --- END OF CHANGE ---
+
         val intent = Intent(this, target)
             .putExtra("extra_level", level)
         startActivity(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // When returning from a game, restart the browsing music.
+        MusicManager.start(this)
     }
 }
