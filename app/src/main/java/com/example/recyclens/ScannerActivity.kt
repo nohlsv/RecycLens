@@ -133,7 +133,7 @@ class ScannerActivity : AppCompatActivity() {
 
         initModels()
         ensureCameraReady()
-        setupBottomBar()
+        setupBottomBar(BottomBar.Tab.PLAY)
         setupLanguageToggle()
         setupButtons()
 
