@@ -7,27 +7,28 @@ import androidx.room.RoomDatabase
 import com.example.recyclens.data.model.WasteCategory
 import com.example.recyclens.data.model.WasteMaterial
 
-// 1. LIST ENTITIES: Add all your tables here.
-@Database(entities = [WasteCategory::class, WasteMaterial::class], version = 1)
+@Database(
+    entities = [WasteCategory::class, WasteMaterial::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
-    // 2. DAO GETTER: Connects the database to your queries
-    abstract fun recyclensDao(): RecycLensDao
+    abstract fun recycLensDao(): RecycLensDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun getDatabase(context: Context): AppDatabase {
+        fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "recyclens_database"
+                    "recyclensdb.db"
                 )
-                    // 3. ASSET IMPORT: This must match your assets/databases folder exactly
-                    .createFromAsset("databases/recyclens_schema.db")
-                    .fallbackToDestructiveMigration() // Handles changes gracefully
+                    .createFromAsset("database/recyclensdb.db")
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

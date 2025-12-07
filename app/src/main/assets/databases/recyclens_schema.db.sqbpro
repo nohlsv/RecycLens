@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="recyclens.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="1"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="3163"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="game_result" custom_title="0" dock_id="6" table="4,11:maingame_result"/><dock_state state="000000ff00000000fd000000010000000200000774000003befc0100000003fb000000160064006f0063006b00420072006f00770073006500310100000000000007740000000000000000fb000000160064006f0063006b00420072006f00770073006500350100000000000007740000000000000000fb000000160064006f0063006b00420072006f00770073006500360100000000000007740000011900ffffff000007740000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="capture_image" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="68"/><column index="2" value="113"/><column index="3" value="63"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="game_result" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="71"/><column index="2" value="86"/><column index="3" value="82"/><column index="4" value="68"/><column index="5" value="72"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="result" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="58"/><column index="2" value="120"/><column index="3" value="65"/><column index="4" value="70"/><column index="5" value="74"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">PRAGMA foreign_keys = ON;
+
+INSERT INTO &quot;waste_category&quot; (name, bin_color, icon_path, description) VALUES
+('Biodegradable', 'Green', 'ic_green_bin', 'Can rot naturally'),
+('Non-Biodegradable', 'Blue', 'ic_blue_bin', 'Does not rot easily');
+
+INSERT INTO &quot;waste_material&quot;
+(name_en, name_tl, description_en, description_tl, image_path, category_id)
+VALUES
+('Banana Peel', 'Balat ng Saging', 'Fruit waste', 'Basurang prutas', 'ic_trash_banana', 1),
+('Fruit', 'Prutas', 'Leftover fruit', 'Natirang prutas', 'ic_trash_fruit', 1),
+('Leaf', 'Dahon', 'Dry leaf', 'Tuyong dahon', 'ic_trash_leaf', 1),
+('Grass', 'Damo', 'Cut grass', 'Pinutol na damo', 'ic_trash_grass', 1),
+('Paper', 'Papel', 'Clean paper', 'Malinis na papel', 'ic_trash_paper', 1),
+('Tissue', 'Tisyu', 'Used tissue', 'Ginamit na tisyu', 'ic_trash_tissue', 1),
+('Plastic Cup', 'Plastik na Baso', 'Disposable plastic cup', 'Itinatapong plastik na baso', 'ic_trash_plastic_cup', 2),
+('Plastic Bottle', 'Plastik na Bote', 'Water bottle', 'Bote ng tubig', 'ic_trash_bottle', 2),
+('Candy Wrapper', 'Balot ng Kendi', 'Plastic wrapper', 'Balot ng kendi', 'ic_trash_wrapper', 2),
+('Styrofoam Box', 'Styro na Lalagyan', 'Food container', 'Lalagyan ng pagkain', 'ic_trash_styro', 2);
+
+INSERT INTO &quot;game&quot; (game_title, game_level, current_score) VALUES
+('Street Cleanup', 'Easy', 0),
+('Street Cleanup', 'Medium', 0),
+('Street Cleanup', 'Hard', 0),
+('Trash Sorting', 'Easy', 0),
+('Trash Sorting', 'Medium', 0),
+('Trash Sorting', 'Hard', 0);
+
+DELETE FROM &quot;trash_sorting_game&quot;;
+
+INSERT INTO &quot;trash_sorting_game&quot;
+(trash_icon, category_name, material_name)
+VALUES
+('ic_trash_banana', 'Biodegradable', 'Banana Peel'),
+('ic_trash_fruit', 'Biodegradable', 'Fruit'),
+('ic_trash_leaf', 'Biodegradable', 'Leaf'),
+('ic_trash_grass', 'Biodegradable', 'Grass'),
+('ic_trash_paper', 'Biodegradable', 'Paper'),
+('ic_trash_tissue', 'Biodegradable', 'Tissue'),
+('ic_trash_plastic_cup', 'Non-Biodegradable', 'Plastic Cup'),
+('ic_trash_bottle', 'Non-Biodegradable', 'Plastic Bottle'),
+('ic_trash_wrapper', 'Non-Biodegradable', 'Candy Wrapper'),
+('ic_trash_styro', 'Non-Biodegradable', 'Styrofoam Box');
+
+DELETE FROM &quot;street_cleanup_game&quot;;
+
+INSERT INTO &quot;street_cleanup_game&quot;
+(street_icon, location_name, material_name, trash_count, timer)
+VALUES
+('ic_trash_banana', 'School Yard', 'Banana Peel', 5, 90),
+('ic_trash_grass', 'Public Park', 'Grass', 7, 60),
+('ic_trash_plastic_cup', 'Street Side', 'Plastic Cup', 9, 45);
+</sql><current_tab id="0"/></tab_sql></sqlb_project>

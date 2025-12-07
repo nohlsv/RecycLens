@@ -14,8 +14,6 @@ class ChooseLevelActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.choose_level_page)
 
-        // setupBottomBar(BottomBar.Tab.PLAY) // Commented out for safety
-
         gameType = intent.getStringExtra(GameSelectActivity.EXTRA_GAME_TYPE)
             ?: GameSelectActivity.GAME_TRASH_SORTING
 
@@ -40,6 +38,7 @@ class ChooseLevelActivity : AppCompatActivity() {
         btnEasy.setOnClickListener   { openGame(1) }
         btnMedium.setOnClickListener { openGame(2) }
         btnHard.setOnClickListener   { openGame(3) }
+        setupBottomBar(BottomBar.Tab.PLAY)
     }
 
     private fun openGame(level: Int) {
@@ -52,10 +51,8 @@ class ChooseLevelActivity : AppCompatActivity() {
                 TrashSortingActivity::class.java
         }
 
-        // --- CHANGE IS HERE ---
         // Stop the browsing music before starting a game
-        MusicManager.stop(this)
-        // --- END OF CHANGE ---
+        MusicManager.stop() // fixed: stop() takes no arguments
 
         val intent = Intent(this, target)
             .putExtra("extra_level", level)

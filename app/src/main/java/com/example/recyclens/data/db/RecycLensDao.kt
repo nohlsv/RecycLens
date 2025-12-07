@@ -4,20 +4,19 @@ import androidx.room.Dao
 import androidx.room.Query
 import com.example.recyclens.data.model.WasteCategory
 import com.example.recyclens.data.model.WasteMaterial
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RecycLensDao {
-    // 1. Get all categories (Green/Blue Bins)
-    @Query("SELECT * FROM waste_category")
-    fun getAllCategories(): Flow<List<WasteCategory>>
 
-    // 2. Get a specific material by its English name (for the Scanner)
-    // We use name_en because the AI model detects in English
-    @Query("SELECT * FROM waste_material WHERE name_en LIKE :detectedName LIMIT 1")
-    suspend fun getMaterialByName(detectedName: String): WasteMaterial?
+    @Query("SELECT * FROM waste_material WHERE name_en = :name OR name_tl = :name LIMIT 1")
+    suspend fun getMaterialByName(name: String): WasteMaterial?
 
-    // 3. Get all materials for a specific bin (for the Games)
-    @Query("SELECT * FROM waste_material WHERE category_id = :categoryId")
-    fun getMaterialsByCategory(categoryId: Int): Flow<List<WasteMaterial>>
+    @Query("SELECT * FROM waste_category WHERE category_id = :id LIMIT 1")
+    suspend fun getCategoryById(id: Int): WasteCategory?
+
+    @Query("SELECT * FROM waste_category ORDER BY category_id")
+    suspend fun getAllCategories(): List<WasteCategory>
+
+    @Query("SELECT * FROM waste_material WHERE category_id = :categoryId ORDER BY material_id")
+    suspend fun getMaterialsByCategory(categoryId: Int): List<WasteMaterial>
 }

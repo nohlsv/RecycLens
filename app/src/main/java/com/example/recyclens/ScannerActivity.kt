@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,25 +14,32 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.recyclens.data.db.AppDatabase
+import com.example.recyclens.data.model.WasteCategory
+import com.example.recyclens.data.model.WasteMaterial
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
-import java.io.InputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class ScannerActivity : ComponentActivity() {
+class ScannerActivity : AppCompatActivity() {
 
     private lateinit var topCard: FrameLayout
     private lateinit var previewView: PreviewView
@@ -41,32 +49,49 @@ class ScannerActivity : ComponentActivity() {
     private lateinit var infoRightIcon: ImageView
     private lateinit var btnCamera: ImageButton
     private lateinit var btnGallery: ImageButton
+    private lateinit var navScan: ImageButton
+    private lateinit var navPlay: ImageView
+    private lateinit var langToggle: RelativeLayout
+    private lateinit var langText: TextView
+    private lateinit var btnSpeaker: ImageButton
+    private lateinit var labelScan: TextView
+    private lateinit var labelPlay: TextView
 
     private lateinit var cameraExecutor: ExecutorService
     private var imageCapture: ImageCapture? = null
     private var capturedView: ImageView? = null
     private var showingCaptured = false
 
-    // ------- MODEL 2: old fruits / veggies / plastic -------
-    private var model2Interpreter: Interpreter? = null
-    private var model2Labels: List<String> = emptyList()
-    private val MODEL2 = "model2.tflite"
-    private val MODEL2_LABELS_FILE = "model2_labels.txt"
+    private lateinit var model2Interpreter: Interpreter
+    private lateinit var extraInterpreter: Interpreter
+    private lateinit var model2Labels: List<String>
+    private lateinit var extraLabels: List<String>
 
-    // ------- MODEL 3: new leaves / grass / styro / paper -------
-    private var extraInterpreter: Interpreter? = null
-    private var extraLabels: List<String> = emptyList()
-    private val EXTRA_MODEL = "model.tflite"
-    private val EXTRA_LABELS_FILE = "model_labels.txt"
+    private var mediaPlayer: MediaPlayer? = null
 
-    private val INPUT_SIZE = 224
-    private val THRESHOLD = 0.60f
-    private val CUP_BOTTLE_MARGIN = 0.10f
+    private var isEnglish: Boolean = true
+
+    private var lastPrediction: PredictedItem? = null
+    private var lastMaterial: WasteMaterial? = null
+    private var lastCategory: WasteCategory? = null
+
+    companion object {
+        private const val MODEL2 = "model2.tflite"
+        private const val MODEL2_LABELS_FILE = "model2_labels.txt"
+        private const val EXTRA_MODEL = "model.tflite"
+        private const val EXTRA_LABELS_FILE = "model_labels.txt"
+        private const val INPUT_SIZE = 224
+        private const val THRESHOLD = 0.60f
+        private const val CUP_BOTTLE_MARGIN = 0.10f
+    }
 
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) startCamera()
-            else Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show()
+            if (granted) startCamera() else Toast.makeText(
+                this,
+                "Camera permission required",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
     private val pickImage =
@@ -75,7 +100,7 @@ class ScannerActivity : ComponentActivity() {
             val bmp = decodeBitmapFromUriSafely(contentResolver, uri, maxDim = 1600)
             if (bmp != null) {
                 showCapturedPhoto(bmp)
-                runRecognitionIfAvailable(bmp)
+                classifyAndFetch(bmp)
             } else {
                 Toast.makeText(this, "Could not open image", Toast.LENGTH_SHORT).show()
             }
@@ -85,42 +110,108 @@ class ScannerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.scanner_page)
 
-        topCard       = findViewById(R.id.topCard)
-        previewView   = findViewById(R.id.previewView)
-        titleBar      = findViewById(R.id.titleBar)
-        infoTitle     = findViewById(R.id.infoTitle)
-        infoText      = findViewById(R.id.infoText)
-        infoRightIcon = findViewById(R.id.infoRightIcon)
-        btnCamera     = findViewById(R.id.btnCamera)
-        btnGallery    = findViewById(R.id.btnGallery)
+        mediaPlayer = MediaPlayer.create(this, R.raw.recyclens_browsing_music)
+        mediaPlayer?.isLooping = true
 
-        BottomBar.setup(this, selected = BottomBar.Tab.SCAN)
+        topCard = findViewById(R.id.topCard)
+        previewView = findViewById(R.id.previewView)
+        titleBar = findViewById(R.id.titleBar)
+        infoTitle = findViewById(R.id.infoTitle)
+        infoText = findViewById(R.id.infoText)
+        infoRightIcon = findViewById(R.id.infoRightIcon)
+        btnCamera = findViewById(R.id.btnCamera)
+        btnGallery = findViewById(R.id.btnGallery)
+        navScan = findViewById(R.id.navScan)
+        navPlay = findViewById(R.id.navPlay)
+        langToggle = findViewById(R.id.langToggle)
+        langText = findViewById(R.id.langText)
+        btnSpeaker = findViewById(R.id.btnSpeaker)
+        labelScan = findViewById(R.id.labelScan)
+        labelPlay = findViewById(R.id.labelPlay)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         initModels()
         ensureCameraReady()
+        setupBottomBar()
+        setupLanguageToggle()
+        setupButtons()
 
-        btnCamera.setOnClickListener {
-            if (showingCaptured) showLivePreview()
-            else captureFrameFromPreview()
-        }
+        showLivePreview()
+        renderPredictionOrIdle()
+    }
 
-        btnGallery.setOnClickListener {
-            pickImage.launch("image/*")
-        }
+    override fun onResume() {
+        super.onResume()
+        if (mediaPlayer != null && mediaPlayer?.isPlaying == false) mediaPlayer?.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (mediaPlayer?.isPlaying == true) mediaPlayer?.pause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-        model2Interpreter?.close()
-        extraInterpreter?.close()
+        model2Interpreter.close()
+        extraInterpreter.close()
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+
+    private fun setupButtons() {
+        btnCamera.setOnClickListener {
+            if (showingCaptured) {
+                showLivePreview()
+            } else {
+                captureFrameFromPreview()
+            }
+        }
+
+        btnGallery.setOnClickListener { pickImage.launch("image/*") }
+
+        btnSpeaker.setOnClickListener {
+            Toast.makeText(
+                this,
+                if (isEnglish) "Voice guide not implemented yet."
+                else "Hindi pa available ang voice guide.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun setupLanguageToggle() {
+        updateLanguageTexts()
+        langToggle.setOnClickListener {
+            isEnglish = !isEnglish
+            updateLanguageTexts()
+            renderPredictionOrIdle()
+        }
+    }
+
+    private fun updateLanguageTexts() {
+        if (isEnglish) {
+            langText.text = "EN"
+            labelScan.text = "Scan Trash"
+            labelPlay.text = "Play Games"
+        } else {
+            langText.text = "TL"
+            labelScan.text = "I-scan ang Basura"
+            labelPlay.text = "Maglaro"
+        }
+    }
+
+    private fun setupBottomBar() {
+        navScan.isSelected = true
     }
 
     private fun ensureCameraReady() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            == PackageManager.PERMISSION_GRANTED
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
             startCamera()
         } else {
@@ -132,7 +223,6 @@ class ScannerActivity : ComponentActivity() {
         val providerFuture = ProcessCameraProvider.getInstance(this)
         providerFuture.addListener({
             val provider = providerFuture.get()
-
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
@@ -148,20 +238,19 @@ class ScannerActivity : ComponentActivity() {
                 preview,
                 imageCapture
             )
-
             showLivePreview()
         }, ContextCompat.getMainExecutor(this))
     }
 
     private fun captureFrameFromPreview() {
-        titleBar.text = "Taking a picture..."
+        titleBar.text = if (isEnglish) "Taking a picture..." else "Kumukuha ng larawan..."
         previewView.post {
             val bmp = previewView.bitmap
             if (bmp != null) {
                 showCapturedPhoto(bmp)
-                runRecognitionIfAvailable(bmp)
+                classifyAndFetch(bmp)
             } else {
-                titleBar.text = "Oops, try again!"
+                titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
                 Toast.makeText(this, "Unable to capture picture", Toast.LENGTH_SHORT).show()
             }
         }
@@ -189,47 +278,26 @@ class ScannerActivity : ComponentActivity() {
         capturedView?.visibility = View.GONE
         previewView.visibility = View.VISIBLE
         showingCaptured = false
-
-        titleBar.text = "Camera Ready"
-        infoTitle.text = getString(R.string.info_title)
-        infoText.text  = getString(R.string.info_description)
-        infoRightIcon.setImageResource(R.drawable.ic_green_bin)
+        lastPrediction = null
+        lastMaterial = null
+        lastCategory = null
+        renderPredictionOrIdle()
     }
 
-    // ----------------- LOAD BOTH MODELS -----------------
-
     private fun initModels() {
-        try {
-            val mapped2 = loadModelMapped(MODEL2)
-            model2Interpreter = Interpreter(mapped2, Interpreter.Options())
-            model2Labels = assets.open(MODEL2_LABELS_FILE)
-                .bufferedReader()
-                .readLines()
-                .filter { it.isNotBlank() }
-        } catch (_: Exception) {
-            model2Interpreter = null
-            model2Labels = emptyList()
-        }
+        val mapped2 = loadModelMapped(MODEL2)
+        model2Interpreter = Interpreter(mapped2, Interpreter.Options())
+        model2Labels = assets.open(MODEL2_LABELS_FILE)
+            .bufferedReader()
+            .readLines()
+            .filter { it.isNotBlank() }
 
-        try {
-            val mappedExtra = loadModelMapped(EXTRA_MODEL)
-            extraInterpreter = Interpreter(mappedExtra, Interpreter.Options())
-            extraLabels = assets.open(EXTRA_LABELS_FILE)
-                .bufferedReader()
-                .readLines()
-                .filter { it.isNotBlank() }
-        } catch (_: Exception) {
-            extraInterpreter = null
-            extraLabels = emptyList()
-        }
-
-        if (model2Interpreter == null && extraInterpreter == null) {
-            Toast.makeText(
-                this,
-                "I can't load my models. Please check the .tflite and .txt files in assets.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        val mappedExtra = loadModelMapped(EXTRA_MODEL)
+        extraInterpreter = Interpreter(mappedExtra, Interpreter.Options())
+        extraLabels = assets.open(EXTRA_LABELS_FILE)
+            .bufferedReader()
+            .readLines()
+            .filter { it.isNotBlank() }
     }
 
     private fun loadModelMapped(name: String): MappedByteBuffer {
@@ -244,80 +312,231 @@ class ScannerActivity : ComponentActivity() {
         }
     }
 
-    // ----------------- RUN BOTH MODELS -----------------
+    private fun classifyAndFetch(bitmap: Bitmap) {
+        titleBar.text = if (isEnglish) "Looking closely..." else "Tinitingnan ko mabuti..."
+        infoTitle.text = if (isEnglish) "Analyzing" else "Sinusuri"
+        infoText.text =
+            if (isEnglish) "I’m checking what kind of waste this is."
+            else "Tinitingnan ko kung anong uri ng basura ito."
+        infoRightIcon.setImageResource(R.drawable.ic_green_bin)
 
-    private fun runRecognitionIfAvailable(bitmap: Bitmap) {
-        val mainInt = model2Interpreter
-        val extraInt = extraInterpreter
+        cameraExecutor.execute {
+            val prediction = classifyBitmap(bitmap)
+            runOnUiThread {
+                if (prediction == null) {
+                    showUnknown()
+                } else {
+                    fetchMaterialAndCategory(prediction)
+                }
+            }
+        }
+    }
 
-        if ((mainInt == null || model2Labels.isEmpty()) &&
-            (extraInt == null || extraLabels.isEmpty())
-        ) {
-            titleBar.text = "Photo Loaded"
-            infoTitle.text = "Helper is sleeping"
-            infoText.text  = "Ask your teacher to check the app files."
+    private fun classifyBitmap(bitmap: Bitmap): PredictedItem? {
+        val pred2 = classifyWithModel(bitmap, model2Interpreter, model2Labels)
+        val res2 = pred2?.let { chooseFinalLabel(it) }
+
+        val predExtra = classifyWithModel(bitmap, extraInterpreter, extraLabels)
+        val resExtra = predExtra?.let { chooseFinalLabelSimple(it) }
+
+        var bestPair: Pair<String, Float>? = null
+        if (res2 != null) bestPair = res2
+        if (resExtra != null && (bestPair == null || resExtra.second > bestPair!!.second)) {
+            bestPair = resExtra
+        }
+
+        val chosen = bestPair ?: return null
+        return PredictedItem(chosen.first, chosen.second)
+    }
+
+    private fun showUnknown() {
+        lastPrediction = null
+        lastMaterial = null
+        lastCategory = null
+        if (isEnglish) {
+            titleBar.text = "I'm not sure"
+            infoTitle.text = "Unknown item"
+            infoText.text = "Try another photo or choose from gallery."
+        } else {
+            titleBar.text = "Hindi ako sigurado"
+            infoTitle.text = "Hindi kilala"
+            infoText.text = "Subukan ang ibang larawan o pumili sa gallery."
+        }
+        infoRightIcon.setImageResource(R.drawable.ic_green_bin)
+    }
+
+    private fun renderPredictionOrIdle() {
+        val pred = lastPrediction
+        if (pred == null) {
+            if (isEnglish) {
+                titleBar.text = "Camera Ready"
+                infoTitle.text = "Scan a trash item"
+                infoText.text = "Point the camera at a waste item or pick a photo from gallery."
+            } else {
+                titleBar.text = "Handa ang Camera"
+                infoTitle.text = "I-scan ang basura"
+                infoText.text = "Itutok ang camera sa basura o pumili ng larawan mula sa gallery."
+            }
             infoRightIcon.setImageResource(R.drawable.ic_green_bin)
             return
         }
 
-        titleBar.text = "Looking closely..."
-        infoTitle.text = "Let me check"
-        infoText.text  = "I’m checking what kind of waste this is."
-        infoRightIcon.setImageResource(R.drawable.ic_green_bin)
+        val material = lastMaterial
+        val category = lastCategory
 
-        cameraExecutor.execute {
-            var bestPair: Pair<String, Float>? = null
+        val materialNameEn: String
+        val materialNameTl: String
+        val categoryId: Int
+        val isNonBio: Boolean
+        val categoryEn: String
+        val categoryTl: String
 
-            // run model2 if available
-            if (mainInt != null && model2Labels.isNotEmpty()) {
-                val pred2 = classifyWithModel(bitmap, mainInt, model2Labels)
-                val res2 = pred2?.let { chooseFinalLabel(it) }
-                if (res2 != null && (bestPair == null || res2.second > bestPair!!.second)) {
-                    bestPair = res2
-                }
+        if (material != null) {
+            materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: pred.label
+            materialNameTl = material.nameTl?.takeIf { it.isNotBlank() } ?: materialNameEn
+
+            categoryId = material.categoryId
+            isNonBio = (categoryId == 2)
+
+            categoryEn = category?.name ?: if (isNonBio) "Non-biodegradable" else "Biodegradable"
+            categoryTl = when (categoryId) {
+                1 -> "Nabubulok"
+                2 -> "Di-nabubulok"
+                else -> if (isNonBio) "Di-nabubulok" else "Nabubulok"
+            }
+        } else {
+            materialNameEn = pred.label
+            materialNameTl = pred.label
+
+            val guessedCategoryId = mapToCategoryId(pred.label) ?: 0
+            categoryId = guessedCategoryId
+            isNonBio = (categoryId == 2)
+
+            categoryEn = if (isNonBio) "Non-biodegradable" else "Biodegradable"
+            categoryTl = if (isNonBio) "Di-nabubulok" else "Nabubulok"
+        }
+
+        val binRes = if (isNonBio) R.drawable.ic_blue_bin else R.drawable.ic_green_bin
+
+        if (isEnglish) {
+            titleBar.text = materialNameEn
+            infoTitle.text = categoryEn
+            val binSentence = if (isNonBio) {
+                "Throw it in the BLUE bin."
+            } else {
+                "Throw it in the GREEN bin."
+            }
+            infoText.text = "This looks like: $materialNameEn\n$binSentence"
+        } else {
+            titleBar.text = materialNameTl
+            infoTitle.text = categoryTl
+            val binSentence = if (isNonBio) {
+                "Itapon ito sa ASUL na basurahan."
+            } else {
+                "Itapon ito sa BERDENG basurahan."
+            }
+            infoText.text = "Ito ay: $materialNameTl\n$binSentence"
+        }
+
+        val imageName = material?.image ?: ""
+        val resId =
+            if (imageName.isNotEmpty()) resources.getIdentifier(
+                imageName,
+                "drawable",
+                packageName
+            ) else 0
+
+        if (resId != 0) {
+            infoRightIcon.setImageResource(resId)
+        } else {
+            infoRightIcon.setImageResource(binRes)
+        }
+    }
+
+    private fun fetchMaterialAndCategory(prediction: PredictedItem) {
+        lastPrediction = prediction
+        lastMaterial = null
+        lastCategory = null
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getInstance(applicationContext)
+
+            val candidates = mapLabelToMaterialCandidates(prediction.label)
+            var material: WasteMaterial? = null
+
+            for (c in candidates) {
+                material = db.recycLensDao().getMaterialByName(c)
+                if (material != null) break
             }
 
-            // run extra model if available
-            if (extraInt != null && extraLabels.isNotEmpty()) {
-                val predExtra = classifyWithModel(bitmap, extraInt, extraLabels)
-                val resExtra = predExtra?.let { chooseFinalLabelSimple(it) }
-                if (resExtra != null && (bestPair == null || resExtra.second > bestPair!!.second)) {
-                    bestPair = resExtra
-                }
+            val category = material?.let {
+                db.recycLensDao().getCategoryById(it.categoryId)
             }
 
-            val best = bestPair?.let { (label, score) ->
-                mapToCategory(label)?.let { cat ->
-                    PredictedItem(label, score, cat)
-                }
-            }
+            lastMaterial = material
+            lastCategory = category
 
-            runOnUiThread {
-                if (best == null) {
-                    titleBar.text = "I’m not sure"
-                    infoTitle.text = "I don’t know this item."
-                    infoText.text =
-                        "Ask your teacher or a grown-up which bin to use."
-                    infoRightIcon.setImageResource(R.drawable.ic_green_bin)
-                } else {
-                    showCategoryResult(best)
-                }
+            withContext(Dispatchers.Main) {
+                renderPredictionOrIdle()
             }
         }
     }
 
-    // ----------------- DATA CLASSES -----------------
+    private fun mapLabelToMaterialCandidates(rawLabel: String): List<String> {
+        val label = rawLabel.trim()
+        val lower = label.lowercase()
+        val list = mutableListOf<String>()
+
+        if (label.isNotEmpty()) {
+            list.add(label)
+            list.add(lower)
+            list.add(label.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
+        }
+
+        when {
+            lower.contains("banana") -> {
+                list.add("Banana Peel")
+                list.add("Banana peels")
+            }
+            lower.contains("apple") -> {
+                list.add("Apple Core")
+                list.add("Apple")
+            }
+            lower.contains("mango") -> {
+                list.add("Mango Peel")
+                list.add("Mango")
+            }
+            lower.contains("plastic cup") -> list.add("Plastic Cup")
+            lower.contains("bottle") -> list.add("Plastic Bottle")
+            lower.contains("tissue") -> {
+                list.add("Tissue")
+                list.add("Tissue Roll")
+            }
+            lower.contains("grass") -> {
+                list.add("Grass")
+                list.add("Bermuda Grass")
+            }
+            lower.contains("leaf") || lower.contains("leaves") -> list.add("Leaves")
+            lower.contains("styro") || lower.contains("tray") -> {
+                list.add("Styrofoam Tray")
+                list.add("Styrofoam Box")
+            }
+            lower.contains("ampalaya") -> list.add("Ampalaya")
+            lower.contains("kangkong") -> list.add("Kangkong")
+            lower.contains("okra") -> list.add("Okra")
+            lower.contains("eggplant") -> {
+                list.add("Eggplant")
+                list.add("Talong")
+            }
+        }
+
+        return list.distinct()
+    }
 
     private data class PredictedItem(
         val label: String,
-        val confidence: Float,
-        val category: Category
+        val confidence: Float
     )
-
-    // BIO = biodegradable (leaves, grass, vegetables, tissue, paper, etc.)
-    private enum class Category {
-        PLASTIC, FRUIT, BIO
-    }
 
     private data class Top2Prediction(
         val bestLabel: String,
@@ -325,8 +544,6 @@ class ScannerActivity : ComponentActivity() {
         val secondLabel: String?,
         val secondScore: Float?
     )
-
-    // ----------------- CLASSIFICATION HELPERS -----------------
 
     private fun cropCenterSquare(src: Bitmap): Bitmap {
         val size = minOf(src.width, src.height)
@@ -357,7 +574,6 @@ class ScannerActivity : ComponentActivity() {
 
         val output = Array(1) { FloatArray(labels.size) }
         interpreter.run(input, output)
-
         val scores = output[0]
         if (scores.isEmpty()) return null
 
@@ -369,24 +585,23 @@ class ScannerActivity : ComponentActivity() {
         for (i in 1 until scores.size) {
             val s = scores[i]
             if (s > bestScore) {
-                secondScore = bestScore
                 secondIdx = bestIdx
+                secondScore = bestScore
                 bestScore = s
                 bestIdx = i
             } else if (s > secondScore) {
-                secondScore = s
                 secondIdx = i
+                secondScore = s
             }
         }
 
-        val bestLabel = labels[bestIdx]
-        val secondLabel = if (secondIdx in labels.indices) labels[secondIdx] else null
+        val bestLabel = labels.getOrNull(bestIdx) ?: return null
+        val secondLabel = if (secondIdx >= 0) labels.getOrNull(secondIdx) else null
         val secondScoreFinal = if (secondIdx >= 0) secondScore else null
 
         return Top2Prediction(bestLabel, bestScore, secondLabel, secondScoreFinal)
     }
 
-    // original chooseFinalLabel (handles bottle vs cup margin)
     private fun chooseFinalLabel(pred: Top2Prediction): Pair<String, Float>? {
         if (pred.bestScore < THRESHOLD) return null
 
@@ -404,141 +619,65 @@ class ScannerActivity : ComponentActivity() {
         ) {
             finalLabel = secondLabel
         }
-
         return finalLabel to pred.bestScore
     }
 
-    // simpler version: no special bottle/cup logic
     private fun chooseFinalLabelSimple(pred: Top2Prediction): Pair<String, Float>? {
         if (pred.bestScore < THRESHOLD) return null
         return pred.bestLabel to pred.bestScore
     }
 
-    // ----------------- LABEL → CATEGORY (includes new labels) -----------------
-
-    private fun mapToCategory(rawLabel: String): Category? {
+    private fun mapToCategoryId(rawLabel: String): Int? {
         val label = rawLabel.trim().lowercase()
-
         return when {
-            // 🌿 Biodegradable: leaves, grass, tissue, paper
-            label.contains("leave") || label.contains("leaves") -> Category.BIO
-            label.contains("grass") -> Category.BIO              // includes bermuda grass → grass
-            label.contains("tissue") -> Category.BIO
-            label.contains("stationery") && label.contains("paper") -> Category.BIO
-
-            // 🍃 Vegetables / other biodegradable from old model
-            label.contains("ampalaya") -> Category.BIO
-            label.contains("kangkong") -> Category.BIO
-            label.contains("okra") -> Category.BIO
-            label.contains("eggplant") -> Category.BIO
-
-            // 🍎 Fruits
-            label.contains("apple") -> Category.FRUIT
-            label.contains("banana") -> Category.FRUIT
-            label.contains("mango") -> Category.FRUIT
-
-            // 🧴 Non-biodegradable (plastic / wrappers / styro)
-            label.contains("snack") && label.contains("wrapper") -> Category.PLASTIC
-            label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
-                Category.PLASTIC
-            label.contains("bottle") -> Category.PLASTIC
-            label.contains("plastic") && label.contains("cup") -> Category.PLASTIC
-
+            label.contains("fruit") || label.contains("prutas") -> 1
+            label.contains("vegetable") || label.contains("gulay") -> 1
+            label.contains("paper") || label.contains("papel") -> 1
+            label.contains("leaf") || label.contains("leaves") || label.contains("dahon") -> 1
+            label.contains("grass") -> 1
+            label.contains("tissue") || label.contains("tisyu") -> 1
+            label.contains("ampalaya") || label.contains("kangkong") || label.contains("okra") || label.contains("eggplant") -> 1
+            label.contains("apple") || label.contains("banana") || label.contains("mango") -> 1
+            label.contains("bottle") -> 2
+            label.contains("plastic") || label.contains("plastik") -> 2
+            label.contains("styro") || label.contains("styrofoam") || label.contains("tray") -> 2
+            label.contains("wrapper") -> 2
+            label.contains("can") || label.contains("lata") -> 2
             else -> null
         }
     }
 
-    // ----------------- SHOW RESULT (BINS) -----------------
+    private fun decodeBitmapFromUriSafely(
+        resolver: ContentResolver,
+        uri: Uri,
+        maxDim: Int = 1600
+    ): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        val first = resolver.openInputStream(uri) ?: return null
+        first.use {
+            BitmapFactory.decodeStream(it, null, bounds)
+        }
 
-    private fun showCategoryResult(item: PredictedItem) {
-        val label = item.label.trim().lowercase()
-
-        when (item.category) {
-            Category.PLASTIC -> {
-                val niceName = when {
-                    label.contains("snack") && label.contains("wrapper") -> "Snack Wrapper"
-                    label.contains("styro") || label.contains("styrofoam") || label.contains("tray") ->
-                        "Styrofoam Tray"
-                    label.contains("bottle") -> "Plastic Bottle"
-                    label.contains("cup")    -> "Plastic Cup"
-                    else                     -> "Plastic Item"
-                }
-                titleBar.text = niceName
-                infoTitle.text = "Non-biodegradable waste"
-                infoText.text =
-                    "This is a $niceName.\nPut it in the BLUE BIN."
-                infoRightIcon.setImageResource(R.drawable.ic_blue_bin)
-            }
-
-            Category.FRUIT -> {
-                val name = when {
-                    label.contains("apple")  -> "Apple"
-                    label.contains("banana") -> "Banana"
-                    label.contains("mango")  -> "Mango"
-                    else -> "Fruit"
-                }
-                titleBar.text = name
-                infoTitle.text = "Biodegradable waste"
-                infoText.text =
-                    "This is a $name.\nPut peels and leftovers in the GREEN BIN."
-                infoRightIcon.setImageResource(R.drawable.ic_green_bin)
-            }
-
-            Category.BIO -> {
-                val name = when {
-                    label.contains("leave") || label.contains("leaves") -> "Leaves"
-                    label.contains("grass") -> "Grass"   // ✅ Bermuda grass will show as Grass
-                    label.contains("tissue") -> "Tissue"
-                    label.contains("stationery") && label.contains("paper") -> "Stationery Paper"
-                    label.contains("ampalaya") -> "Ampalaya"
-                    label.contains("kangkong") -> "Kangkong"
-                    label.contains("okra") -> "Okra"
-                    label.contains("eggplant") -> "Eggplant"
-                    else -> "Biodegradable Waste"
-                }
-                titleBar.text = name
-                infoTitle.text = "Biodegradable waste"
-                infoText.text =
-                    "This is $name.\nPut it in the GREEN BIN."
-                infoRightIcon.setImageResource(R.drawable.ic_green_bin)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            val raw = resolver.openInputStream(uri) ?: return null
+            raw.use {
+                return BitmapFactory.decodeStream(it)
             }
         }
-    }
-}
 
-// -------- helper remains the same --------
+        val maxSrc = maxOf(bounds.outWidth, bounds.outHeight)
+        var sample = 1
+        while (maxSrc / sample > maxDim) sample *= 2
 
-private fun decodeBitmapFromUriSafely(
-    resolver: ContentResolver,
-    uri: Uri,
-    maxDim: Int = 1600
-): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, bounds)
-    }
-
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-        return resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it)
+        val opts = BitmapFactory.Options().apply {
+            inJustDecodeBounds = false
+            inSampleSize = sample
+            inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-    }
 
-    val maxSrc = maxOf(bounds.outWidth, bounds.outHeight)
-    var sample = 1
-    while (maxSrc / sample > maxDim) sample *= 2
-
-    val opts = BitmapFactory.Options().apply {
-        inJustDecodeBounds = false
-        inSampleSize = sample
-        inPreferredConfig = Bitmap.Config.ARGB_8888
-    }
-
-    var input: InputStream? = null
-    return try {
-        input = resolver.openInputStream(uri)
-        BitmapFactory.decodeStream(input, null, opts)
-    } finally {
-        input?.close()
+        val input2 = resolver.openInputStream(uri) ?: return null
+        input2.use {
+            return BitmapFactory.decodeStream(it, null, opts)
+        }
     }
 }

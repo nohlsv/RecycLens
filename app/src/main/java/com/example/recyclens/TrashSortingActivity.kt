@@ -1,10 +1,12 @@
 package com.example.recyclens
 
+import android.content.ContentValues
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
-import android.media.MediaPlayer // 1. Import MediaPlayer
+import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -19,63 +21,45 @@ import androidx.appcompat.app.AppCompatActivity
 
 class TrashSortingActivity : AppCompatActivity() {
 
-    // 2. Add MediaPlayer variable
     private var mediaPlayer: MediaPlayer? = null
-
     private lateinit var gameArea: FrameLayout
     private lateinit var btnStart: TextView
     private lateinit var tvLevel: TextView
-
     private lateinit var binGreen: View
     private lateinit var binBlue: View
-
     private lateinit var tvScore: TextView
     private lateinit var circleRow: LinearLayout
     private val circleViews = mutableListOf<View>()
 
+    private val dbName = "recyclensdb.db"
+
     private data class WasteItem(
+        val resName: String,
         val drawableRes: Int,
-        val isBiodegradable: Boolean,  // true = BIO → green bin, false = NON-BIO → blue bin
-        val label: String              // simple name for kids
+        val isBiodegradable: Boolean,
+        val label: String
     )
 
-    private val allItems = listOf(
-        WasteItem(R.drawable.ic_trash_banana, true,  "Banana peel"),
-        WasteItem(R.drawable.ic_trash_fruit,  true,  "Fruit"),
-        WasteItem(R.drawable.ic_trash_leaf,   true,  "Leaf"),
-        WasteItem(R.drawable.ic_trash_paper,  true,  "Paper"),
-        WasteItem(R.drawable.ic_trash_tissue, true,  "Tissue"),
-        WasteItem(R.drawable.ic_trash_plastic_cup, false, "Plastic cup"),
-        WasteItem(R.drawable.ic_trash_bottle,      false, "Plastic bottle"),
-        WasteItem(R.drawable.ic_trash_wrapper,     false, "Candy wrapper"),
-        WasteItem(R.drawable.ic_trash_styro,       false, "Styrofoam box"),
-        WasteItem(R.drawable.ic_trash_grass, true, "Grass")
-    )
-
+    private var allItems: List<WasteItem> = emptyList()
     private var currentQueue: MutableList<WasteItem> = mutableListOf()
     private var answeredCount = 0
     private var totalToSort = 0
     private var selectedLevel = 1
     private var score = 0
+    private var wrongCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.trash_sorting)
 
-        // 3. Initialize the MediaPlayer
-        // Make sure you have 'trash_sorting_music.mp3' in your res/raw folder
         mediaPlayer = MediaPlayer.create(this, R.raw.trash_sorting_music)
-        mediaPlayer?.isLooping = true // Make the music loop
-
-        // setupBottomBar(BottomBar.Tab.PLAY) // This line may cause an error if BottomBar is not set up, commented out for safety.
+        mediaPlayer?.isLooping = true
 
         gameArea = findViewById(R.id.gameAreaTrash)
         btnStart = findViewById(R.id.btnStartTrash)
         tvLevel = findViewById(R.id.tvLevel)
-
         binGreen = findViewById(R.id.binGreen)
         binBlue = findViewById(R.id.binBlue)
-
         tvScore = findViewById(R.id.tvScore)
         circleRow = findViewById(R.id.circleRow)
 
@@ -95,11 +79,12 @@ class TrashSortingActivity : AppCompatActivity() {
             else -> "Easy"
         }
 
+        allItems = loadItemsFromDb()
         resetScoreAndCircles(0)
 
         btnStart.setOnClickListener {
-            val roundRunning = (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
-
+            val roundRunning =
+                (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
             if (roundRunning) {
                 AlertDialog.Builder(this)
                     .setTitle("Restart level?")
@@ -115,12 +100,11 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         showInstructionDialog()
+        setupBottomBar(BottomBar.Tab.PLAY)
     }
 
-    // 4. Add Activity Lifecycle methods for music control
     override fun onResume() {
         super.onResume()
-        // Start or resume playing music
         if (mediaPlayer != null && mediaPlayer?.isPlaying == false) {
             mediaPlayer?.start()
         }
@@ -128,7 +112,6 @@ class TrashSortingActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Pause music when the activity is not in the foreground
         if (mediaPlayer?.isPlaying == true) {
             mediaPlayer?.pause()
         }
@@ -136,10 +119,56 @@ class TrashSortingActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Stop and release the MediaPlayer to free up resources
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+    }
+
+    private fun loadItemsFromDb(): List<WasteItem> {
+        val map = LinkedHashMap<String, WasteItem>()
+        try {
+            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val sql = """
+                SELECT wm.image_path, wm.name_en, wc.name
+                FROM waste_material wm
+                JOIN waste_category wc ON wm.category_id = wc.category_id
+                WHERE wm.image_path IS NOT NULL AND wm.image_path <> ''
+            """.trimIndent()
+            val c = db.rawQuery(sql, null)
+            val imgIdx = c.getColumnIndex("image_path")
+            val nameIdx = c.getColumnIndex("name_en")
+            val catIdx = c.getColumnIndex("name")
+            while (c.moveToNext()) {
+                val img = c.getString(imgIdx) ?: continue
+                if (map.containsKey(img)) continue
+                val label = c.getString(nameIdx) ?: img
+                val catName = c.getString(catIdx) ?: ""
+                val isBio = catName.equals("Biodegradable", ignoreCase = true)
+                val resId = resources.getIdentifier(img, "drawable", packageName)
+                if (resId != 0) {
+                    map[img] = WasteItem(img, resId, isBio, label)
+                }
+            }
+            c.close()
+            db.close()
+        } catch (e: Exception) {
+            Log.e("TrashSortingActivity", "loadItemsFromDb failed", e)
+        }
+
+        if (map.isNotEmpty()) return map.values.toList()
+
+        return listOf(
+            WasteItem("ic_trash_banana", R.drawable.ic_trash_banana, true, "Banana Peel"),
+            WasteItem("ic_trash_fruit", R.drawable.ic_trash_fruit, true, "Fruit"),
+            WasteItem("ic_trash_leaf", R.drawable.ic_trash_leaf, true, "Leaf"),
+            WasteItem("ic_trash_paper", R.drawable.ic_trash_paper, true, "Paper"),
+            WasteItem("ic_trash_tissue", R.drawable.ic_trash_tissue, true, "Tissue"),
+            WasteItem("ic_trash_plastic_cup", R.drawable.ic_trash_plastic_cup, false, "Plastic Cup"),
+            WasteItem("ic_trash_bottle", R.drawable.ic_trash_bottle, false, "Plastic Bottle"),
+            WasteItem("ic_trash_wrapper", R.drawable.ic_trash_wrapper, false, "Candy Wrapper"),
+            WasteItem("ic_trash_styro", R.drawable.ic_trash_styro, false, "Styrofoam Box"),
+            WasteItem("ic_trash_grass", R.drawable.ic_trash_grass, true, "Grass")
+        )
     }
 
     private fun showInstructionDialog() {
@@ -147,7 +176,7 @@ class TrashSortingActivity : AppCompatActivity() {
             .setTitle("How to play")
             .setMessage(
                 "Hello, little recycler!\n\n" +
-                        "1. Look at the trash picture and its name (like Banana peel, Plastic cup, Grass).\n" +
+                        "1. Look at the trash picture and its name.\n" +
                         "2. If it is food, fruit, leaves, grass, paper, or tissue,\n" +
                         "   drag it to the GREEN bin.\n" +
                         "3. If it is plastic, bottle, wrapper, or styro,\n" +
@@ -163,18 +192,21 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun startNewRound() {
+        btnStart.visibility = View.GONE
         gameArea.removeAllViews()
         answeredCount = 0
         score = 0
+        wrongCount = 0
 
         totalToSort = when (selectedLevel) {
-            1 -> 5   // Easy
-            2 -> 7   // Medium
-            3 -> 10  // Hard
+            1 -> 5
+            2 -> 7
+            3 -> 10
             else -> 5
         }
 
-        currentQueue = allItems.shuffled()
+        val source = if (allItems.size >= totalToSort) allItems else loadItemsFromDb()
+        currentQueue = source.shuffled()
             .let { if (it.size >= totalToSort) it.take(totalToSort) else it }
             .toMutableList()
 
@@ -186,7 +218,7 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun resetScoreAndCircles(count: Int) {
-        tvScore.text = "Score: 0"
+        tvScore.text = "Score: 0 / $count"
         circleRow.removeAllViews()
         circleViews.clear()
 
@@ -194,11 +226,10 @@ class TrashSortingActivity : AppCompatActivity() {
             val circle = View(this).apply {
                 val d = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor("#BBBBBB")) // grey = not answered yet
+                    setColor(Color.parseColor("#BBBBBB"))
                 }
                 background = d
             }
-
             val lp = LinearLayout.LayoutParams(dp(16), dp(16))
             lp.marginStart = dp(4)
             lp.marginEnd = dp(4)
@@ -217,14 +248,15 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun showNextItem() {
-        if (currentQueue.isEmpty() || answeredCount >= totalToSort) {
+        if (currentQueue.isEmpty()) {
+            saveGameResultToDb(totalToSort, score, wrongCount)
             showSuccessDialog()
+            btnStart.visibility = View.VISIBLE
+            btnStart.text = "Play Again"
             return
         }
 
-        val item = currentQueue[0]
-        currentQueue.removeAt(0)
-
+        val item = currentQueue.removeAt(0)
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -242,6 +274,7 @@ class TrashSortingActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             textSize = 16f
             gravity = Gravity.CENTER
+            setShadowLayer(4f, 0f, 0f, Color.BLACK)
         }
 
         container.addView(iv)
@@ -250,25 +283,22 @@ class TrashSortingActivity : AppCompatActivity() {
         val lp = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,
             FrameLayout.LayoutParams.WRAP_CONTENT
-        )
-        lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-        lp.topMargin = dp(40)
+        ).apply {
+            gravity = Gravity.CENTER
+        }
 
         gameArea.addView(container, lp)
-
         attachDragListener(container)
         updateProgress()
     }
 
     private fun updateProgress() {
-        btnStart.text = "${answeredCount} / $totalToSort"
-        tvScore.text = "Score: $score"
+        tvScore.text = "Score: $score / $totalToSort"
     }
 
     private fun attachDragListener(view: View) {
         var dX = 0f
         var dY = 0f
-
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -303,14 +333,11 @@ class TrashSortingActivity : AppCompatActivity() {
 
         if (!droppedOnGreen && !droppedOnBlue) {
             Toast.makeText(this, "Drop the trash inside the green or blue bin.", Toast.LENGTH_SHORT).show()
-            // Return the view to its original position smoothly
-            // This part requires knowing the start position, which we don't track here.
-            // For now, it just stays where it was dropped if outside a bin.
+            view.animate().translationX(0f).translationY(0f).setDuration(200).start()
             return
         }
 
         val currentIndex = answeredCount
-
         val correctIsGreen = item.isBiodegradable
         val isCorrect = (correctIsGreen && droppedOnGreen) || (!correctIsGreen && droppedOnBlue)
 
@@ -321,13 +348,14 @@ class TrashSortingActivity : AppCompatActivity() {
             setCircleColor(currentIndex, Color.parseColor("#4CAF50"))
             Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
         } else {
+            wrongCount++
             setCircleColor(currentIndex, Color.parseColor("#EF5350"))
             Toast.makeText(
                 this,
                 if (item.isBiodegradable)
-                    "${item.label} is soft or from plants.\nIt goes in the GREEN bin."
+                    "${item.label} should go in the GREEN bin."
                 else
-                    "${item.label} is plastic or hard.\nIt goes in the BLUE bin.",
+                    "${item.label} should go in the BLUE bin.",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -337,10 +365,59 @@ class TrashSortingActivity : AppCompatActivity() {
         showNextItem()
     }
 
+    private fun saveGameResultToDb(totalScore: Int, correct: Int, wrong: Int) {
+        try {
+            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS game_result(
+                    total_score INTEGER NOT NULL,
+                    correct_count INTEGER NOT NULL,
+                    wrong_count INTEGER NOT NULL,
+                    game TEXT NOT NULL
+                )
+                """.trimIndent()
+            )
+
+            val values = ContentValues().apply {
+                put("total_score", totalScore)
+                put("correct_count", correct)
+                put("wrong_count", wrong)
+                put("game", "trash_sorting")
+            }
+
+            val rowId = db.insert("game_result", null, values)
+            Log.d("TrashSortingActivity", "Inserted row into game_result, rowId=$rowId")
+
+            val levelName = when (selectedLevel) {
+                1 -> "Easy"
+                2 -> "Medium"
+                3 -> "Hard"
+                else -> "Easy"
+            }
+            val upd = ContentValues().apply {
+                put("current_score", correct)
+            }
+            val updatedRows = db.update(
+                "game",
+                upd,
+                "game_title=? AND game_level=?",
+                arrayOf("Trash Sorting", levelName)
+            )
+            Log.d("TrashSortingActivity", "Updated game table rows=$updatedRows")
+
+            db.close()
+        } catch (e: Exception) {
+            Log.e("TrashSortingActivity", "saveGameResultToDb failed", e)
+        }
+    }
+
     private fun showSuccessDialog() {
+        val scoreText = "Correct: $score  |  Wrong: $wrongCount"
         AlertDialog.Builder(this)
             .setTitle("Good work!")
-            .setMessage("You finished the level!\nScore: $score / $totalToSort")
+            .setMessage("You finished the level!\n$scoreText")
             .setCancelable(false)
             .setPositiveButton("Play again") { _, _ ->
                 startNewRound()

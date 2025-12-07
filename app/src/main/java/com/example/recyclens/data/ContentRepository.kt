@@ -1,26 +1,26 @@
-package com.example.recyclens.data.model
+package com.example.recyclens.data
 
 import android.content.Context
 import com.example.recyclens.data.db.AppDatabase
-import kotlinx.coroutines.flow.Flow
+import com.example.recyclens.data.model.WasteCategory
+import com.example.recyclens.data.model.WasteMaterial
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ContentRepository(context: Context) {
 
-    // 1. Get the DAO from the AppDatabase
-    private val dao = AppDatabase.getDatabase(context).recyclensDao()
+    private val db by lazy { AppDatabase.getInstance(context.applicationContext) }
+    private val dao by lazy { db.recycLensDao() }
 
-    // 2. FOR THE SCANNER: Get a material by its English name (e.g., "Plastic Bottle")
-    suspend fun getMaterialByName(name: String): WasteMaterial? {
-        return dao.getMaterialByName(name)
+    suspend fun getWasteMaterialByName(name: String): WasteMaterial? = withContext(Dispatchers.IO) {
+        dao.getMaterialByName(name) // ensure DAO method name matches
     }
 
-    // 3. FOR THE GAME SELECT: Get all categories (Green vs Blue)
-    fun getAllCategories(): Flow<List<WasteCategory>> {
-        return dao.getAllCategories()
+    suspend fun getAllCategories(): List<WasteCategory> = withContext(Dispatchers.IO) {
+        dao.getAllCategories() // ensure this DAO method exists and returns List<WasteCategory>
     }
 
-    // 4. FOR THE GAMES: Get items specific to a bin
-    fun getMaterialsByCategory(categoryId: Int): Flow<List<WasteMaterial>> {
-        return dao.getMaterialsByCategory(categoryId)
+    suspend fun getMaterialsByCategory(categoryId: Int): List<WasteMaterial> = withContext(Dispatchers.IO) {
+        dao.getMaterialsByCategory(categoryId) // ensure this DAO method exists
     }
 }

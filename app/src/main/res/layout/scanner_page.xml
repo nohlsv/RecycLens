@@ -8,7 +8,6 @@
     android:background="@color/bgGreen"
     tools:context=".ScannerActivity">
 
-    <!-- Top photo card (rounded) -->
     <FrameLayout
         android:id="@+id/topCard"
         android:layout_width="0dp"
@@ -130,7 +129,6 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Bin icon: green by default, changed in code -->
         <ImageView
             android:id="@+id/infoRightIcon"
             android:layout_width="60dp"

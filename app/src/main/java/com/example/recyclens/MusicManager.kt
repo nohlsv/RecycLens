@@ -1,17 +1,97 @@
 package com.example.recyclens
 
 import android.content.Context
-import android.content.Intent
+import android.media.MediaPlayer
+import android.util.Log
 
 object MusicManager {
+    private var player: MediaPlayer? = null
+    private var currentResId: Int = 0
+    private const val TAG = "MusicManager"
 
-    fun start(context: Context) {
-        val serviceIntent = Intent(context, MusicService::class.java)
-        context.startService(serviceIntent)
+    @Synchronized
+    fun start(context: Context, rawResName: String = "recyclens_browsing_music") {
+        val appCtx = context.applicationContext
+        val resId = appCtx.resources.getIdentifier(rawResName, "raw", appCtx.packageName)
+        if (resId == 0) {
+            Log.w(TAG, "start: raw resource not found: $rawResName")
+            return
+        }
+
+        if (player == null || currentResId != resId) {
+            try {
+                player?.release()
+            } catch (_: Exception) {
+            }
+            player = MediaPlayer.create(appCtx, resId)
+            if (player == null) {
+                Log.w(TAG, "start: MediaPlayer.create returned null for resId=$resId")
+                currentResId = 0
+                return
+            }
+            player?.isLooping = true
+            player?.setOnErrorListener { mp, what, extra ->
+                Log.w(TAG, "MediaPlayer error what=$what extra=$extra")
+                try {
+                    mp.stop()
+                } catch (_: Exception) {
+                }
+                try {
+                    mp.release()
+                } catch (_: Exception) {
+                }
+                player = null
+                currentResId = 0
+                true
+            }
+            currentResId = resId
+        }
+
+        try {
+            if (player?.isPlaying != true) {
+                player?.start()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "start failed", e)
+            try {
+                player?.release()
+            } catch (_: Exception) {
+            }
+            player = null
+            currentResId = 0
+        }
     }
 
-    fun stop(context: Context) {
-        val serviceIntent = Intent(context, MusicService::class.java)
-        context.stopService(serviceIntent)
+    @Synchronized
+    fun pause() {
+        try {
+            if (player?.isPlaying == true) {
+                player?.pause()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "pause failed", e)
+        }
+    }
+
+    @Synchronized
+    fun stop() {
+        try {
+            if (player != null) {
+                if (player?.isPlaying == true) {
+                    player?.stop()
+                }
+                player?.release()
+                player = null
+                currentResId = 0
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "stop failed", e)
+            try {
+                player?.release()
+            } catch (_: Exception) {
+            }
+            player = null
+            currentResId = 0
+        }
     }
 }
