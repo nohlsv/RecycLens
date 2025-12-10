@@ -68,7 +68,7 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         findViewById<ImageButton>(R.id.btnInfoTrash).setOnClickListener {
-            showInstructionDialog()
+            showInstructionDialog(1)
         }
 
         selectedLevel = intent.getIntExtra("extra_level", 1)
@@ -99,7 +99,7 @@ class TrashSortingActivity : AppCompatActivity() {
             }
         }
 
-        showInstructionDialog()
+        showInstructionDialog(1)
         setupBottomBar(BottomBar.Tab.PLAY)
     }
 
@@ -171,24 +171,130 @@ class TrashSortingActivity : AppCompatActivity() {
         )
     }
 
-    private fun showInstructionDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("How to play")
-            .setMessage(
-                "Hello, little recycler!\n\n" +
-                        "1. Look at the trash picture and its name.\n" +
-                        "2. If it is food, fruit, leaves, grass, paper, or tissue,\n" +
-                        "   drag it to the GREEN bin.\n" +
-                        "3. If it is plastic, bottle, wrapper, or styro,\n" +
-                        "   drag it to the BLUE bin.\n" +
-                        "4. Drop the trash inside a bin and let go.\n" +
-                        "5. Each correct answer gives you a green circle.\n" +
-                        "6. Try to get all circles green!"
-            )
-            .setPositiveButton("Got it!") { dialog, _ ->
+    private fun showInstructionDialog(page: Int = 1) {
+        val title = if (page == 1) {
+            "Biodegradable – GREEN bin"
+        } else {
+            "Non-biodegradable – BLUE bin"
+        }
+
+        val builder = AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(createInstructionContent(page))
+
+        if (page == 1) {
+            builder.setPositiveButton("Next (Non-bio)") { dialog, _ ->
                 dialog.dismiss()
+                showInstructionDialog(2)
             }
-            .show()
+            builder.setNegativeButton("Close") { dialog, _ -> dialog.dismiss() }
+        } else {
+            builder.setPositiveButton("Back (Bio)") { dialog, _ ->
+                dialog.dismiss()
+                showInstructionDialog(1)
+            }
+            builder.setNegativeButton("Done") { dialog, _ -> dialog.dismiss() }
+        }
+
+        builder.show()
+    }
+
+    private fun createInstructionContent(page: Int): View {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+
+        val headerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dp(8))
+        }
+
+        val binIcon = ImageView(this).apply {
+            val size = dp(40)
+            layoutParams = LinearLayout.LayoutParams(size, size)
+            val binView = if (page == 1) binGreen else binBlue
+            if (binView is ImageView) {
+                setImageDrawable(binView.drawable)
+            } else {
+                background = binView.background
+            }
+        }
+
+        val binLabel = TextView(this).apply {
+            text = if (page == 1) {
+                "Drag these to this GREEN bin"
+            } else {
+                "Drag these to this BLUE bin"
+            }
+            textSize = 15f
+            setPadding(dp(12), 0, 0, 0)
+        }
+
+        headerRow.addView(binIcon)
+        headerRow.addView(binLabel)
+        layout.addView(headerRow)
+
+        val subtitle = TextView(this).apply {
+            text = if (page == 1) {
+                "These are biodegradable items:"
+            } else {
+                "These are non-biodegradable items:"
+            }
+            textSize = 14f
+        }
+        layout.addView(subtitle)
+
+        val items = if (page == 1) {
+            listOf(
+                R.drawable.ic_trash_banana to "Banana Peel",
+                R.drawable.ic_trash_fruit to "Fruit",
+                R.drawable.ic_trash_leaf to "Leaf",
+                R.drawable.ic_trash_grass to "Grass",
+                R.drawable.ic_trash_paper to "Paper",
+                R.drawable.ic_trash_tissue to "Tissue"
+            )
+        } else {
+            listOf(
+                R.drawable.ic_trash_plastic_cup to "Plastic Cup",
+                R.drawable.ic_trash_bottle to "Plastic Bottle",
+                R.drawable.ic_trash_wrapper to "Candy Wrapper",
+                R.drawable.ic_trash_styro to "Styrofoam Box"
+            )
+        }
+
+        for ((resId, label) in items) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, dp(8))
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val icon = ImageView(this).apply {
+                setImageResource(resId)
+                val size = dp(32)
+                layoutParams = LinearLayout.LayoutParams(size, size)
+            }
+
+            val text = TextView(this).apply {
+                text = label
+                textSize = 14f
+                setPadding(dp(12), 0, 0, 0)
+            }
+
+            row.addView(icon)
+            row.addView(text)
+            layout.addView(row)
+        }
+
+        val hint = TextView(this).apply {
+            text = "\nWatch the trash picture and its name, then drag it into the correct bin."
+            textSize = 13f
+        }
+        layout.addView(hint)
+
+        return layout
     }
 
     private fun startNewRound() {
@@ -332,7 +438,7 @@ class TrashSortingActivity : AppCompatActivity() {
         val droppedOnBlue = blueRect.contains(dropRawX, dropRawY)
 
         if (!droppedOnGreen && !droppedOnBlue) {
-            Toast.makeText(this, "Drop the trash inside the green or blue bin.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Drop the trash inside the GREEN or BLUE bin.", Toast.LENGTH_SHORT).show()
             view.animate().translationX(0f).translationY(0f).setDuration(200).start()
             return
         }

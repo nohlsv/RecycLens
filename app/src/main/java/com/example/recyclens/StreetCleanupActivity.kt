@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -80,7 +81,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         findViewById<ImageView>(R.id.btnInfoStreet).setOnClickListener {
-            showInstructionDialog()
+            showInstructionDialog(1)
         }
 
         level = intent.getIntExtra("extra_level", 1)
@@ -108,7 +109,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             }
         }
 
-        showInstructionDialog()
+        showInstructionDialog(1)
         setupBottomBar(BottomBar.Tab.PLAY)
     }
 
@@ -288,7 +289,10 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun showFeedbackCircle(isCorrect: Boolean) {
         val color = if (isCorrect) Color.parseColor("#4CAF50") else Color.parseColor("#EF5350")
-        val d = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
+        val d = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+        }
         feedbackCircle?.background = d
         feedbackCircle?.animate()?.alpha(1f)?.setDuration(150)?.withEndAction {
             feedbackCircle?.animate()?.alpha(0f)?.setStartDelay(400)?.setDuration(200)?.start()
@@ -370,11 +374,14 @@ class StreetCleanupActivity : AppCompatActivity() {
                 secondsLeft = s
                 tvTimer.text = String.format("Time: %02d", s)
             }
+
             override fun onFinish() {
                 secondsLeft = 0
                 if (remainingItems <= 0) return
                 tvTimer.text = "Time: 00"
-                showFailDialog()
+                showFloodAnimation {
+                    showFailDialog()
+                }
             }
         }.start()
     }
@@ -417,8 +424,13 @@ class StreetCleanupActivity : AppCompatActivity() {
         val droppedOnNonBio = nonBioRect.contains(dropRawX, dropRawY)
 
         if (!droppedOnBio && !droppedOnNonBio) {
+            val name = getTrashDisplayName(item)
             view.animate().x(startX).y(startY).setDuration(200).start()
-            Toast.makeText(this, "Put the trash inside the GREEN or BLUE bin.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Drag $name into the correct bin.",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -432,19 +444,44 @@ class StreetCleanupActivity : AppCompatActivity() {
             correctCount++
         } else {
             wrongCount++
-            Toast.makeText(this, "Oops, wrong bin. Try again on the next trash.", Toast.LENGTH_SHORT).show()
+            val name = getTrashDisplayName(item)
+            val correctBin = getCorrectBinText(item)
+            Toast.makeText(
+                this,
+                "$name should go to the $correctBin.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         if (remainingItems <= 0) {
             timer?.cancel()
             timer = null
+            evaluateFinalScore()
+        }
+    }
+
+    private fun evaluateFinalScore() {
+        if (totalItems <= 0) {
+            showSuccessDialog()
+            return
+        }
+
+        val accuracy = correctCount.toFloat() / totalItems.toFloat()
+
+        if (accuracy < 0.5f) {
+            showFloodAnimation {
+                showLowScoreDialog()
+            }
+        } else {
             showSuccessDialog()
         }
     }
 
-    private fun showFloodAnimation() {
+    private fun showFloodAnimation(onEnd: (() -> Unit)? = null) {
         if (floodView == null) {
-            floodView = View(this).apply { setBackgroundColor(Color.parseColor("#8800B0FF")) }
+            floodView = View(this).apply {
+                setBackgroundColor(Color.parseColor("#8800B0FF"))
+            }
             rootLayout.addView(
                 floodView,
                 ViewGroup.LayoutParams(
@@ -457,7 +494,14 @@ class StreetCleanupActivity : AppCompatActivity() {
             val h = rootLayout.height.toFloat()
             floodView?.translationY = h
             floodView?.alpha = 0f
-            floodView?.animate()?.translationY(0f)?.alpha(1f)?.setDuration(1200)?.start()
+            floodView?.animate()
+                ?.translationY(0f)
+                ?.alpha(1f)
+                ?.setDuration(1200)
+                ?.withEndAction {
+                    onEnd?.invoke()
+                }
+                ?.start()
         }
     }
 
@@ -530,7 +574,6 @@ class StreetCleanupActivity : AppCompatActivity() {
     }
 
     private fun showFailDialog() {
-        showFloodAnimation()
         val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
         val timeUsed = totalSeconds - secondsLeft
         val timeText = "Time used: $timeUsed second(s)"
@@ -543,7 +586,32 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle("Oh no!")
-            .setMessage("The drains got blocked and the street flooded because some trash was left.\n\n$scoreText\n$timeText\n\nTry again and clean everything before the time runs out!")
+            .setMessage(
+                "The drains got blocked and the street flooded because some trash was left.\n\n" +
+                        "$scoreText\n$timeText\n\nTry again and clean everything before the time runs out!"
+            )
+            .setCancelable(false)
+            .setPositiveButton("Try again") { _, _ -> startNewGame() }
+            .setNegativeButton("Back") { _, _ -> finish() }
+            .show()
+    }
+
+    private fun showLowScoreDialog() {
+        val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
+        val itemsText = "You sorted all $totalItems items."
+
+        saveGameResultToDb(
+            totalScore = correctCount,
+            correct = correctCount,
+            wrong = wrongCount
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("Oh no!")
+            .setMessage(
+                "Some trash went into the wrong bin, so the drains still got blocked and the street flooded.\n\n" +
+                        "$scoreText\n$itemsText"
+            )
             .setCancelable(false)
             .setPositiveButton("Try again") { _, _ -> startNewGame() }
             .setNegativeButton("Back") { _, _ -> finish() }
@@ -552,18 +620,153 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
-    private fun showInstructionDialog() {
-        val fullMessage = "Hello, street cleaner!\n\n" +
-                "1. Look for the trash on the street.\n" +
-                "2. Drag the trash and drop it on the correct bin.\n" +
-                "3. GREEN bin = Biodegradable (food, fruit, leaves, paper).\n" +
-                "4. BLUE bin = Non-biodegradable (plastic, bottles, wrappers).\n" +
-                "5. Clean all trash before the time is up!"
+    private fun getTrashDisplayName(item: WasteItem): String {
+        return when (item.resName) {
+            "ic_trash_banana" -> "Banana Peel"
+            "ic_trash_fruit" -> "Fruit"
+            "ic_trash_leaf" -> "Leaf"
+            "ic_trash_grass" -> "Grass"
+            "ic_trash_paper" -> "Paper"
+            "ic_trash_tissue" -> "Tissue"
+            "ic_trash_plastic_cup" -> "Plastic Cup"
+            "ic_trash_bottle" -> "Plastic Bottle"
+            "ic_trash_wrapper" -> "Candy Wrapper"
+            "ic_trash_styro" -> "Styrofoam Box"
+            else -> "This trash"
+        }
+    }
 
-        AlertDialog.Builder(this)
-            .setTitle("How to play")
-            .setMessage(fullMessage)
-            .setPositiveButton("Got it!") { dialog, _ -> dialog.dismiss() }
-            .show()
+    private fun getCorrectBinText(item: WasteItem): String {
+        return if (item.isBiodegradable) {
+            "bio bin (binGreenStreet)"
+        } else {
+            "non-bio bin (binBlueStreet)"
+        }
+    }
+
+    private fun showInstructionDialog(page: Int = 1) {
+        val title = if (page == 1) {
+            "Biodegradable"
+        } else {
+            "Non-biodegradable"
+        }
+
+        val builder = AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(createInstructionContent(page))
+
+        if (page == 1) {
+            builder.setPositiveButton("Next (Non-bio)") { dialog, _ ->
+                dialog.dismiss()
+                showInstructionDialog(2)
+            }
+            builder.setNegativeButton("Close") { dialog, _ -> dialog.dismiss() }
+        } else {
+            builder.setPositiveButton("Back (Bio)") { dialog, _ ->
+                dialog.dismiss()
+                showInstructionDialog(1)
+            }
+            builder.setNegativeButton("Done") { dialog, _ -> dialog.dismiss() }
+        }
+
+        builder.show()
+    }
+
+    private fun createInstructionContent(page: Int): View {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+
+        val headerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dp(8))
+        }
+
+        val binIcon = ImageView(this).apply {
+            val size = dp(40)
+            layoutParams = LinearLayout.LayoutParams(size, size)
+            val binView = if (page == 1) bioBin else nonBioBin
+            if (binView is ImageView) {
+                setImageDrawable(binView.drawable)
+            } else {
+                background = binView.background
+            }
+        }
+
+        val binLabel = TextView(this).apply {
+            text = if (page == 1) {
+                "Drop these into this BIO bin"
+            } else {
+                "Drop these into this NON-BIO bin"
+            }
+            textSize = 15f
+            setPadding(dp(12), 0, 0, 0)
+        }
+
+        headerRow.addView(binIcon)
+        headerRow.addView(binLabel)
+        layout.addView(headerRow)
+
+        val subtitle = TextView(this).apply {
+            text = if (page == 1) {
+                "These items belong to the biodegradable bin:"
+            } else {
+                "These items belong to the non-biodegradable bin:"
+            }
+            textSize = 14f
+        }
+        layout.addView(subtitle)
+
+        val items = if (page == 1) {
+            listOf(
+                R.drawable.ic_trash_banana to "Banana Peel",
+                R.drawable.ic_trash_fruit to "Fruit",
+                R.drawable.ic_trash_leaf to "Leaf",
+                R.drawable.ic_trash_grass to "Grass",
+                R.drawable.ic_trash_paper to "Paper",
+                R.drawable.ic_trash_tissue to "Tissue"
+            )
+        } else {
+            listOf(
+                R.drawable.ic_trash_plastic_cup to "Plastic Cup",
+                R.drawable.ic_trash_bottle to "Plastic Bottle",
+                R.drawable.ic_trash_wrapper to "Candy Wrapper",
+                R.drawable.ic_trash_styro to "Styrofoam Box"
+            )
+        }
+
+        for ((resId, label) in items) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(8), 0, dp(8))
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val icon = ImageView(this).apply {
+                setImageResource(resId)
+                val size = dp(32)
+                layoutParams = LinearLayout.LayoutParams(size, size)
+            }
+
+            val text = TextView(this).apply {
+                text = label
+                textSize = 14f
+                setPadding(dp(12), 0, 0, 0)
+            }
+
+            row.addView(icon)
+            row.addView(text)
+            layout.addView(row)
+        }
+
+        val hint = TextView(this).apply {
+            text = "\nDrag each trash into this bin during the game."
+            textSize = 13f
+        }
+        layout.addView(hint)
+
+        return layout
     }
 }
