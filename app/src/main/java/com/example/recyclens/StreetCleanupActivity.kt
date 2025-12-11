@@ -7,6 +7,8 @@ import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -14,10 +16,12 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import java.util.Locale
 
 class StreetCleanupActivity : AppCompatActivity() {
 
@@ -32,6 +36,11 @@ class StreetCleanupActivity : AppCompatActivity() {
     private lateinit var nonBioBin: View
     private lateinit var tvTimer: TextView
     private var feedbackCircle: View? = null
+
+    private lateinit var langToggle: RelativeLayout
+    private lateinit var langText: TextView
+    private lateinit var labelScan: TextView
+    private lateinit var labelPlay: TextView
 
     private var level = 1
     private var remainingItems = 0
@@ -60,6 +69,11 @@ class StreetCleanupActivity : AppCompatActivity() {
     private var allItems: List<WasteItem> = emptyList()
     private var levelConfig: LevelConfig? = null
 
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var wasMusicPlayingBeforeTts = false
+    private var isEnglish = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.street_cleanup)
@@ -74,14 +88,25 @@ class StreetCleanupActivity : AppCompatActivity() {
         bioBin = findViewById(R.id.binGreenStreet)
         nonBioBin = findViewById(R.id.binBlueStreet)
 
+        langToggle = findViewById(R.id.langToggle)
+        langText = findViewById(R.id.langText)
+        labelScan = findViewById(R.id.labelScan)
+        labelPlay = findViewById(R.id.labelPlay)
+
         findViewById<ImageView>(R.id.btnBackStreet).setOnClickListener {
+            stopSpeech()
             timer?.cancel()
             timer = null
             finish()
         }
 
         findViewById<ImageView>(R.id.btnInfoStreet).setOnClickListener {
-            showInstructionDialog(1)
+            stopSpeech()
+            if (ttsReady) {
+                showInstructionDialog(1)
+            } else {
+                Toast.makeText(this, if (isEnglish) "Voice guide is starting, please wait." else "Nagsisimula ang voice guide, pakihintay sandali.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         level = intent.getIntExtra("extra_level", 1)
@@ -98,19 +123,54 @@ class StreetCleanupActivity : AppCompatActivity() {
         btnStart.setOnClickListener {
             val gameRunning = (timer != null) || (remainingItems > 0)
             if (gameRunning) {
+                stopSpeech()
                 AlertDialog.Builder(this)
-                    .setTitle("Restart game?")
-                    .setMessage("Do you want to reset the trash and the timer and start again?")
-                    .setPositiveButton("Yes") { _, _ -> startNewGame() }
-                    .setNegativeButton("No", null)
+                    .setTitle(if (isEnglish) "Restart game?" else "Ulitin ang laro?")
+                    .setMessage(if (isEnglish) "Do you want to reset the trash and the timer and start again?" else "Gusto mo bang i-reset ang basura at oras at magsimula muli?")
+                    .setPositiveButton(if (isEnglish) "Yes" else "Oo") { _, _ -> startNewGame() }
+                    .setNegativeButton(if (isEnglish) "No" else "Hindi", null)
                     .show()
             } else {
                 startNewGame()
             }
         }
 
-        showInstructionDialog(1)
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                ttsReady = true
+                updateTtsLanguage()
+                tts?.setSpeechRate(1.0f)
+                tts?.setPitch(1.0f)
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) {
+                        if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
+                            runOnUiThread {
+                                if (mediaPlayer?.isPlaying == false) {
+                                    mediaPlayer?.start()
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onError(utteranceId: String?) {
+                        if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
+                            runOnUiThread {
+                                if (mediaPlayer?.isPlaying == false) {
+                                    mediaPlayer?.start()
+                                }
+                            }
+                        }
+                    }
+                })
+                showInstructionDialog(1)
+            } else {
+                ttsReady = false
+            }
+        }
+
         setupBottomBar(BottomBar.Tab.PLAY)
+        setupLanguageToggle()
     }
 
     override fun onResume() {
@@ -130,6 +190,65 @@ class StreetCleanupActivity : AppCompatActivity() {
         mediaPlayer = null
         timer?.cancel()
         timer = null
+        stopSpeech()
+        tts?.shutdown()
+        tts = null
+    }
+
+    private fun setupLanguageToggle() {
+        updateLanguageTexts()
+        langToggle.setOnClickListener {
+            isEnglish = !isEnglish
+            updateLanguageTexts()
+            if (ttsReady) {
+                updateTtsLanguage()
+            }
+        }
+    }
+
+    private fun updateLanguageTexts() {
+        if (isEnglish) {
+            langText.text = "EN"
+            labelScan.text = "Scan Trash"
+            labelPlay.text = "Play Games"
+        } else {
+            langText.text = "TL"
+            labelScan.text = "I-scan ang Basura"
+            labelPlay.text = "Maglaro"
+        }
+    }
+
+    private fun updateTtsLanguage() {
+        val engine = tts ?: return
+        val locale = if (isEnglish) Locale.US else Locale.forLanguageTag("fil-PH")
+        var result = engine.setLanguage(locale)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            result = engine.setLanguage(Locale.US)
+        }
+    }
+
+    private fun speak(textEn: String, textTl: String, id: String = "STREET_TTS") {
+        val engine = tts ?: return
+        if (!ttsReady) return
+        val text = if (isEnglish) textEn else textTl
+        if (text.isBlank()) return
+        wasMusicPlayingBeforeTts = mediaPlayer?.isPlaying == true
+        if (wasMusicPlayingBeforeTts) {
+            mediaPlayer?.pause()
+        }
+        engine.stop()
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
+    }
+
+    private fun stopSpeech() {
+        val engine = tts ?: return
+        engine.stop()
+        if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
+            if (mediaPlayer?.isPlaying == false) {
+                mediaPlayer?.start()
+            }
+        }
+        wasMusicPlayingBeforeTts = false
     }
 
     private fun loadItemsFromDb(): List<WasteItem> {
@@ -236,6 +355,7 @@ class StreetCleanupActivity : AppCompatActivity() {
     }
 
     private fun startNewGame() {
+        stopSpeech()
         timer?.cancel()
         timer = null
         gameArea.removeAllViews()
@@ -253,6 +373,13 @@ class StreetCleanupActivity : AppCompatActivity() {
             createFeedbackCircle()
             populateTrash()
             startTimer()
+            val en = "Drag each trash into the correct bin before time runs out. " +
+                    "Biodegradable items like banana peel, fruit, leaf, grass, paper, and tissue go in the green bin. " +
+                    "Non-biodegradable items like plastic cup, plastic bottle, candy wrapper, and styrofoam box go in the blue bin."
+            val tl = "Hilahin ang bawat basura papunta sa tamang basurahan bago maubos ang oras. " +
+                    "Ang mga nabubulok na basura tulad ng balat ng saging, prutas, dahon, damo, papel, at tisyu ay ilagay sa berdeng basurahan. " +
+                    "Ang mga di-nabubulok tulad ng plastic cup, plastic bottle, candy wrapper, at styrofoam box ay ilagay sa asul na basurahan."
+            speak(en, tl)
         }
     }
 
@@ -351,7 +478,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             gameArea.addView(iv, lp)
             attachDragListener(iv)
         }
-        btnStart.text = "Time running…"
+        btnStart.text = if (isEnglish) "Time running…" else "Umiikot ang oras…"
     }
 
     private fun startTimer() {
@@ -424,13 +551,11 @@ class StreetCleanupActivity : AppCompatActivity() {
         val droppedOnNonBio = nonBioRect.contains(dropRawX, dropRawY)
 
         if (!droppedOnBio && !droppedOnNonBio) {
-            val name = getTrashDisplayName(item)
+            val en = "Drag the trash into the green or blue bin."
+            val tl = "Hilahin ang basura papunta sa berdeng o asul na basurahan."
             view.animate().x(startX).y(startY).setDuration(200).start()
-            Toast.makeText(
-                this,
-                "Drag $name into the correct bin.",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, if (isEnglish) en else tl, Toast.LENGTH_SHORT).show()
+            speak(en, tl)
             return
         }
 
@@ -442,15 +567,16 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         if (isCorrect) {
             correctCount++
+            val en = if (item.isBiodegradable) "Correct. This should go in the green bin." else "Correct. This should go in the blue bin."
+            val tl = if (item.isBiodegradable) "Tama. Dapat ito ay nasa berdeng basurahan." else "Tama. Dapat ito ay nasa asul na basurahan."
+            speak(en, tl)
         } else {
             wrongCount++
             val name = getTrashDisplayName(item)
-            val correctBin = getCorrectBinText(item)
-            Toast.makeText(
-                this,
-                "$name should go to the $correctBin.",
-                Toast.LENGTH_SHORT
-            ).show()
+            val en = if (item.isBiodegradable) "$name should go in the green bin." else "$name should go in the blue bin."
+            val tl = if (item.isBiodegradable) "Dapat ilagay ang $name sa berdeng basurahan." else "Dapat ilagay ang $name sa asul na basurahan."
+            Toast.makeText(this, if (isEnglish) en else tl, Toast.LENGTH_SHORT).show()
+            speak(en, tl)
         }
 
         if (remainingItems <= 0) {
@@ -466,7 +592,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             return
         }
 
-        val accuracy = correctCount.toFloat() / totalItems.toFloat()
+        val accuracy = if (totalItems > 0) correctCount.toFloat() / totalItems.toFloat() else 0f
 
         if (accuracy < 0.5f) {
             showFloodAnimation {
@@ -558,6 +684,10 @@ class StreetCleanupActivity : AppCompatActivity() {
         val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
         val timeText = "Time left: $secondsLeft second(s)"
 
+        val en = "Good job. You finished the $levelName level. $scoreText. $timeText."
+        val tl = "Magaling. Natapos mo ang $levelName na antas. $scoreText. $timeText."
+        speak(en, tl)
+
         saveGameResultToDb(
             totalScore = correctCount,
             correct = correctCount,
@@ -565,11 +695,20 @@ class StreetCleanupActivity : AppCompatActivity() {
         )
 
         AlertDialog.Builder(this)
-            .setTitle("Level complete!")
-            .setMessage("You finished the $levelName level!\n\n$scoreText\n$timeText")
+            .setTitle(if (isEnglish) "Level complete!" else "Tapos na ang level!")
+            .setMessage(
+                (if (isEnglish) "You finished the $levelName level!" else "Natapos mo ang $levelName na antas!") +
+                        "\n\n$scoreText\n$timeText"
+            )
             .setCancelable(false)
-            .setPositiveButton("Play again") { _, _ -> startNewGame() }
-            .setNegativeButton("Back") { _, _ -> finish() }
+            .setPositiveButton(if (isEnglish) "Play again" else "Maglaro muli") { _, _ ->
+                stopSpeech()
+                startNewGame()
+            }
+            .setNegativeButton(if (isEnglish) "Back" else "Bumalik") { _, _ ->
+                stopSpeech()
+                finish()
+            }
             .show()
     }
 
@@ -578,6 +717,10 @@ class StreetCleanupActivity : AppCompatActivity() {
         val timeUsed = totalSeconds - secondsLeft
         val timeText = "Time used: $timeUsed second(s)"
 
+        val en = "Oh no. Time is up and some trash was left on the street. The drains got blocked and the street flooded. $scoreText. $timeText. Try again and clean everything before the time runs out."
+        val tl = "Naku. Naubos na ang oras at may naiwan pang basura sa kalsada. Nabara ang kanal at bumaha. $scoreText. $timeText. Subukan muli at linisin lahat bago maubos ang oras."
+        speak(en, tl)
+
         saveGameResultToDb(
             totalScore = correctCount,
             correct = correctCount,
@@ -585,20 +728,37 @@ class StreetCleanupActivity : AppCompatActivity() {
         )
 
         AlertDialog.Builder(this)
-            .setTitle("Oh no!")
+            .setTitle(if (isEnglish) "Oh no!" else "Naku!")
             .setMessage(
-                "The drains got blocked and the street flooded because some trash was left.\n\n" +
-                        "$scoreText\n$timeText\n\nTry again and clean everything before the time runs out!"
+                (if (isEnglish)
+                    "The drains got blocked and the street flooded because some trash was left."
+                else
+                    "Nabara ang kanal at bumaha dahil may naiwan pang basura.") +
+                        "\n\n$scoreText\n$timeText\n\n" +
+                        if (isEnglish)
+                            "Try again and clean everything before the time runs out!"
+                        else
+                            "Subukan muli at linisin lahat bago maubos ang oras!"
             )
             .setCancelable(false)
-            .setPositiveButton("Try again") { _, _ -> startNewGame() }
-            .setNegativeButton("Back") { _, _ -> finish() }
+            .setPositiveButton(if (isEnglish) "Try again" else "Subukan muli") { _, _ ->
+                stopSpeech()
+                startNewGame()
+            }
+            .setNegativeButton(if (isEnglish) "Back" else "Bumalik") { _, _ ->
+                stopSpeech()
+                finish()
+            }
             .show()
     }
 
     private fun showLowScoreDialog() {
         val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
         val itemsText = "You sorted all $totalItems items."
+
+        val en = "Oh no. Some trash went into the wrong bin so the street still flooded. $scoreText. $itemsText."
+        val tl = "Naku. May mga basura na napunta sa maling basurahan kaya bumaha pa rin sa kalsada. $scoreText. $itemsText."
+        speak(en, tl)
 
         saveGameResultToDb(
             totalScore = correctCount,
@@ -607,66 +767,59 @@ class StreetCleanupActivity : AppCompatActivity() {
         )
 
         AlertDialog.Builder(this)
-            .setTitle("Oh no!")
+            .setTitle(if (isEnglish) "Oh no!" else "Naku!")
             .setMessage(
-                "Some trash went into the wrong bin, so the drains still got blocked and the street flooded.\n\n" +
-                        "$scoreText\n$itemsText"
+                (if (isEnglish)
+                    "Some trash went into the wrong bin, so the drains still got blocked and the street flooded."
+                else
+                    "May mga basura na napunta sa maling basurahan kaya nabara pa rin ang kanal at bumaha.") +
+                        "\n\n$scoreText\n$itemsText"
             )
             .setCancelable(false)
-            .setPositiveButton("Try again") { _, _ -> startNewGame() }
-            .setNegativeButton("Back") { _, _ -> finish() }
+            .setPositiveButton(if (isEnglish) "Try again" else "Subukan muli") { _, _ ->
+                stopSpeech()
+                startNewGame()
+            }
+            .setNegativeButton(if (isEnglish) "Back" else "Bumalik") { _, _ ->
+                stopSpeech()
+                finish()
+            }
             .show()
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    private fun getTrashDisplayName(item: WasteItem): String {
-        return when (item.resName) {
-            "ic_trash_banana" -> "Banana Peel"
-            "ic_trash_fruit" -> "Fruit"
-            "ic_trash_leaf" -> "Leaf"
-            "ic_trash_grass" -> "Grass"
-            "ic_trash_paper" -> "Paper"
-            "ic_trash_tissue" -> "Tissue"
-            "ic_trash_plastic_cup" -> "Plastic Cup"
-            "ic_trash_bottle" -> "Plastic Bottle"
-            "ic_trash_wrapper" -> "Candy Wrapper"
-            "ic_trash_styro" -> "Styrofoam Box"
-            else -> "This trash"
-        }
-    }
-
-    private fun getCorrectBinText(item: WasteItem): String {
-        return if (item.isBiodegradable) {
-            "bio bin (binGreenStreet)"
-        } else {
-            "non-bio bin (binBlueStreet)"
-        }
-    }
-
     private fun showInstructionDialog(page: Int = 1) {
-        val title = if (page == 1) {
-            "Biodegradable"
-        } else {
-            "Non-biodegradable"
-        }
-
+        val titleEn = if (page == 1) "Biodegradable – GREEN bin" else "Non-biodegradable – BLUE bin"
+        val titleTl = if (page == 1) "Nabubulok – BERDENG basurahan" else "Di-nabubulok – ASUL na basurahan"
         val builder = AlertDialog.Builder(this)
-            .setTitle(title)
+            .setTitle(if (isEnglish) titleEn else titleTl)
             .setView(createInstructionContent(page))
 
         if (page == 1) {
-            builder.setPositiveButton("Next (Non-bio)") { dialog, _ ->
+            val en = "Biodegradable items like banana peel, fruit, leaf, grass, paper, and tissue should be dropped into the green bin."
+            val tl = "Ang mga nabubulok na basura tulad ng balat ng saging, prutas, dahon, damo, papel, at tisyu ay dapat ilagay sa berdeng basurahan."
+            speak(en, tl)
+            builder.setPositiveButton(if (isEnglish) "Next (Non-bio)" else "Susunod (Di-nabubulok)") { dialog, _ ->
+                stopSpeech()
                 dialog.dismiss()
                 showInstructionDialog(2)
             }
-            builder.setNegativeButton("Close") { dialog, _ -> dialog.dismiss() }
+            builder.setNegativeButton(if (isEnglish) "Close" else "Isara") { dialog, _ ->
+                stopSpeech()
+                dialog.dismiss()
+            }
         } else {
-            builder.setPositiveButton("Back (Bio)") { dialog, _ ->
+            val en = "Non-biodegradable items like plastic cup, plastic bottle, candy wrapper, and styrofoam box should be dropped into the blue bin."
+            val tl = "Ang mga di-nabubulok na basura tulad ng plastic cup, plastic bottle, candy wrapper, at styrofoam box ay dapat ilagay sa asul na basurahan."
+            speak(en, tl)
+            builder.setPositiveButton(if (isEnglish) "Back (Bio)" else "Bumalik (Nabubulok)") { dialog, _ ->
+                stopSpeech()
                 dialog.dismiss()
                 showInstructionDialog(1)
             }
-            builder.setNegativeButton("Done") { dialog, _ -> dialog.dismiss() }
+            builder.setNegativeButton(if (isEnglish) "Done" else "Tapos") { dialog, _ ->
+                stopSpeech()
+                dialog.dismiss()
+            }
         }
 
         builder.show()
@@ -697,9 +850,9 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val binLabel = TextView(this).apply {
             text = if (page == 1) {
-                "Drop these into this BIO bin"
+                if (isEnglish) "Drop these into this GREEN bin" else "Ilagay ang mga ito sa BERDENG basurahan"
             } else {
-                "Drop these into this NON-BIO bin"
+                if (isEnglish) "Drop these into this BLUE bin" else "Ilagay ang mga ito sa ASUL na basurahan"
             }
             textSize = 15f
             setPadding(dp(12), 0, 0, 0)
@@ -711,9 +864,9 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val subtitle = TextView(this).apply {
             text = if (page == 1) {
-                "These items belong to the biodegradable bin:"
+                if (isEnglish) "These belong to the biodegradable bin:" else "Ang mga ito ay nabubulok na basura:"
             } else {
-                "These items belong to the non-biodegradable bin:"
+                if (isEnglish) "These belong to the non-biodegradable bin:" else "Ang mga ito ay di-nabubulok na basura:"
             }
             textSize = 14f
         }
@@ -721,19 +874,19 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val items = if (page == 1) {
             listOf(
-                R.drawable.ic_trash_banana to "Banana Peel",
-                R.drawable.ic_trash_fruit to "Fruit",
-                R.drawable.ic_trash_leaf to "Leaf",
-                R.drawable.ic_trash_grass to "Grass",
-                R.drawable.ic_trash_paper to "Paper",
-                R.drawable.ic_trash_tissue to "Tissue"
+                R.drawable.ic_trash_banana to if (isEnglish) "Banana Peel" else "Balat ng Saging",
+                R.drawable.ic_trash_fruit to if (isEnglish) "Fruit" else "Prutas",
+                R.drawable.ic_trash_leaf to if (isEnglish) "Leaf" else "Dahon",
+                R.drawable.ic_trash_grass to if (isEnglish) "Grass" else "Damo",
+                R.drawable.ic_trash_paper to if (isEnglish) "Paper" else "Papel",
+                R.drawable.ic_trash_tissue to if (isEnglish) "Tissue" else "Tisyu"
             )
         } else {
             listOf(
-                R.drawable.ic_trash_plastic_cup to "Plastic Cup",
-                R.drawable.ic_trash_bottle to "Plastic Bottle",
-                R.drawable.ic_trash_wrapper to "Candy Wrapper",
-                R.drawable.ic_trash_styro to "Styrofoam Box"
+                R.drawable.ic_trash_plastic_cup to if (isEnglish) "Plastic Cup" else "Plastic Cup",
+                R.drawable.ic_trash_bottle to if (isEnglish) "Plastic Bottle" else "Plastic Bottle",
+                R.drawable.ic_trash_wrapper to if (isEnglish) "Candy Wrapper" else "Candy Wrapper",
+                R.drawable.ic_trash_styro to if (isEnglish) "Styrofoam Box" else "Styrofoam Box"
             )
         }
 
@@ -762,11 +915,29 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         val hint = TextView(this).apply {
-            text = "\nDrag each trash into this bin during the game."
+            text = if (isEnglish) "\nDrag each trash into this bin during the game." else "\nHilahin ang bawat basura papunta sa basurahang ito habang naglalaro."
             textSize = 13f
         }
         layout.addView(hint)
 
         return layout
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun getTrashDisplayName(item: WasteItem): String {
+        return when (item.resName) {
+            "ic_trash_banana" -> if (isEnglish) "Banana Peel" else "Balat ng Saging"
+            "ic_trash_fruit" -> if (isEnglish) "Fruit" else "Prutas"
+            "ic_trash_leaf" -> if (isEnglish) "Leaf" else "Dahon"
+            "ic_trash_grass" -> if (isEnglish) "Grass" else "Damo"
+            "ic_trash_paper" -> if (isEnglish) "Paper" else "Papel"
+            "ic_trash_tissue" -> if (isEnglish) "Tissue" else "Tisyu"
+            "ic_trash_plastic_cup" -> "Plastic Cup"
+            "ic_trash_bottle" -> "Plastic Bottle"
+            "ic_trash_wrapper" -> "Candy Wrapper"
+            "ic_trash_styro" -> "Styrofoam Box"
+            else -> if (isEnglish) "This trash" else "Basurang ito"
+        }
     }
 }
