@@ -31,6 +31,16 @@ class GameSelectActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        MusicManager.start(this, "recyclens_browsing_music")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        MusicManager.pause()
+    }
+
     private fun openChooseLevel(gameType: String) {
         val intent = Intent(this, ChooseLevelActivity::class.java)
             .putExtra(EXTRA_GAME_TYPE, gameType)

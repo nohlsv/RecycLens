@@ -74,6 +74,17 @@ object MusicManager {
     }
 
     @Synchronized
+    fun resume() {
+        try {
+            if (player != null && player?.isPlaying == false) {
+                player?.start()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "resume failed", e)
+        }
+    }
+
+    @Synchronized
     fun stop() {
         try {
             if (player != null) {
@@ -92,6 +103,15 @@ object MusicManager {
             }
             player = null
             currentResId = 0
+        }
+    }
+
+    @Synchronized
+    fun isPlaying(): Boolean {
+        return try {
+            player?.isPlaying == true
+        } catch (e: Exception) {
+            false
         }
     }
 }
