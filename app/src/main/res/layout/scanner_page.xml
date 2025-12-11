@@ -116,11 +116,10 @@
                 android:layout_height="wrap_content"
                 android:text="@string/info_title"
                 android:textColor="@color/blueTitle"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:singleLine="true"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:maxLines="1" />
 
             <TextView
                 android:id="@+id/infoText"

@@ -467,6 +467,24 @@ class ScannerActivity : AppCompatActivity() {
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
 
+    private fun getTagalogMaterialName(englishName: String): String? {
+        val lower = englishName.lowercase()
+        return when {
+            lower.contains("banana") -> "Balat ng saging"
+            lower.contains("apple core") || lower.contains("apple") -> "Ubod ng mansanas"
+            lower.contains("mango peel") || lower.contains("mango") -> "Balat ng mangga"
+            lower.contains("plastic bottle") || (lower.contains("bottle") && lower.contains("plastic")) -> "Plastic na bote"
+            lower.contains("plastic cup") -> "Plastic na baso"
+            lower.contains("tissue") -> "Tisyu"
+            lower.contains("grass") -> "Damo"
+            lower.contains("leaf") || lower.contains("leaves") -> "Dahon"
+            lower.contains("styrofoam") || lower.contains("styro") || lower.contains("tray") -> "Styrofoam na lalagyan"
+            lower.contains("wrapper") -> "Balot ng kendi"
+            lower.contains("can") || lower.contains("lata") -> "Lata"
+            else -> null
+        }
+    }
+
     private fun renderPredictionOrIdle() {
         val pred = lastPrediction
         if (pred == null) {
@@ -499,7 +517,10 @@ class ScannerActivity : AppCompatActivity() {
 
         if (material != null) {
             materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: pred.label
-            materialNameTl = material.nameTl?.takeIf { it.isNotBlank() } ?: materialNameEn
+            materialNameTl =
+                material.nameTl?.takeIf { it.isNotBlank() }
+                    ?: getTagalogMaterialName(materialNameEn)
+                            ?: materialNameEn
 
             categoryId = material.categoryId
             isNonBio = (categoryId == 2)
@@ -515,7 +536,7 @@ class ScannerActivity : AppCompatActivity() {
                 category?.descriptionTl ?: if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
         } else {
             materialNameEn = pred.label
-            materialNameTl = pred.label
+            materialNameTl = getTagalogMaterialName(pred.label) ?: pred.label
 
             val guessedCategoryId = mapToCategoryId(pred.label) ?: 0
             categoryId = guessedCategoryId
