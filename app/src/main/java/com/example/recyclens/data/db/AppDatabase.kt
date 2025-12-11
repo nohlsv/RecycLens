@@ -9,7 +9,7 @@ import com.example.recyclens.data.model.WasteMaterial
 
 @Database(
     entities = [WasteCategory::class, WasteMaterial::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

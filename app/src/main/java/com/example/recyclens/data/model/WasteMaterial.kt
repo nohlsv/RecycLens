@@ -6,10 +6,12 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "waste_material")
 data class WasteMaterial(
-
     @PrimaryKey
     @ColumnInfo(name = "material_id")
     val materialId: Int,
+
+    @ColumnInfo(name = "category_id")
+    val categoryId: Int,
 
     @ColumnInfo(name = "name_en")
     val nameEn: String?,
@@ -17,9 +19,6 @@ data class WasteMaterial(
     @ColumnInfo(name = "name_tl")
     val nameTl: String?,
 
-    @ColumnInfo(name = "category_id")
-    val categoryId: Int,
-
-    @ColumnInfo(name = "image_path")
+    @ColumnInfo(name = "image")
     val image: String?
 )

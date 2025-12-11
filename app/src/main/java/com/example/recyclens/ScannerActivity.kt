@@ -10,6 +10,8 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -36,6 +38,7 @@ import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -75,13 +78,19 @@ class ScannerActivity : AppCompatActivity() {
     private var lastMaterial: WasteMaterial? = null
     private var lastCategory: WasteCategory? = null
 
+    private var tts: TextToSpeech? = null
+    private var ttsReady: Boolean = false
+    private var speakTextEn: String? = null
+    private var speakTextTl: String? = null
+    private var wasMusicPlayingBeforeTts: Boolean = false
+
     companion object {
         private const val MODEL2 = "model2.tflite"
         private const val MODEL2_LABELS_FILE = "model2_labels.txt"
         private const val EXTRA_MODEL = "model.tflite"
         private const val EXTRA_LABELS_FILE = "model_labels.txt"
         private const val INPUT_SIZE = 224
-        private const val THRESHOLD = 0.60f
+        private const val THRESHOLD = 0.50f
         private const val CUP_BOTTLE_MARGIN = 0.10f
     }
 
@@ -131,6 +140,37 @@ class ScannerActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                ttsReady = true
+                updateTtsLanguage()
+                tts?.setSpeechRate(1.0f)
+                tts?.setPitch(1.0f)
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) {
+                        if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
+                            runOnUiThread {
+                                if (mediaPlayer?.isPlaying == false) {
+                                    mediaPlayer?.start()
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onError(utteranceId: String?) {
+                        if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
+                            runOnUiThread {
+                                if (mediaPlayer?.isPlaying == false) {
+                                    mediaPlayer?.start()
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+
         initModels()
         ensureCameraReady()
         setupBottomBar(BottomBar.Tab.PLAY)
@@ -159,6 +199,9 @@ class ScannerActivity : AppCompatActivity() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
     }
 
     private fun setupButtons() {
@@ -173,12 +216,31 @@ class ScannerActivity : AppCompatActivity() {
         btnGallery.setOnClickListener { pickImage.launch("image/*") }
 
         btnSpeaker.setOnClickListener {
-            Toast.makeText(
-                this,
-                if (isEnglish) "Voice guide not implemented yet."
-                else "Hindi pa available ang voice guide.",
-                Toast.LENGTH_SHORT
-            ).show()
+            val text = if (isEnglish) speakTextEn else speakTextTl
+            if (!ttsReady || tts == null) {
+                Toast.makeText(
+                    this,
+                    if (isEnglish) "Voice guide is not ready yet." else "Hindi pa handa ang voice guide.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+            if (text.isNullOrBlank()) {
+                Toast.makeText(
+                    this,
+                    if (isEnglish) "Scan a trash item first." else "Mag-scan muna ng basura.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            wasMusicPlayingBeforeTts = mediaPlayer?.isPlaying == true
+            if (wasMusicPlayingBeforeTts) {
+                mediaPlayer?.pause()
+            }
+
+            updateTtsLanguage()
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
         }
     }
 
@@ -187,6 +249,9 @@ class ScannerActivity : AppCompatActivity() {
         langToggle.setOnClickListener {
             isEnglish = !isEnglish
             updateLanguageTexts()
+            if (ttsReady) {
+                updateTtsLanguage()
+            }
             renderPredictionOrIdle()
         }
     }
@@ -203,8 +268,39 @@ class ScannerActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupBottomBar() {
-        navScan.isSelected = true
+    private fun updateTtsLanguage() {
+        val engine = tts ?: return
+
+        val locale = if (isEnglish) {
+            Locale.US
+        } else {
+            Locale.forLanguageTag("fil-PH")
+        }
+
+        var result = engine.setLanguage(locale)
+
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            if (!isEnglish) {
+                val tlLocale = Locale.forLanguageTag("tl-PH")
+                result = engine.setLanguage(tlLocale)
+            } else {
+                result = engine.setLanguage(Locale.US)
+            }
+        }
+
+        if (!isEnglish) {
+            val voices = engine.voices
+            val tagalogVoice = voices?.firstOrNull { v ->
+                val lang = v.locale.language.lowercase()
+                lang == "fil" || lang == "tl"
+            }
+            if (tagalogVoice != null) {
+                engine.voice = tagalogVoice
+            }
+        }
+
+        engine.setSpeechRate(1.0f)
+        engine.setPitch(1.0f)
     }
 
     private fun ensureCameraReady() {
@@ -281,6 +377,8 @@ class ScannerActivity : AppCompatActivity() {
         lastPrediction = null
         lastMaterial = null
         lastCategory = null
+        speakTextEn = null
+        speakTextTl = null
         renderPredictionOrIdle()
     }
 
@@ -319,6 +417,8 @@ class ScannerActivity : AppCompatActivity() {
             if (isEnglish) "I’m checking what kind of waste this is."
             else "Tinitingnan ko kung anong uri ng basura ito."
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
+        speakTextEn = null
+        speakTextTl = null
 
         cameraExecutor.execute {
             val prediction = classifyBitmap(bitmap)
@@ -353,6 +453,8 @@ class ScannerActivity : AppCompatActivity() {
         lastPrediction = null
         lastMaterial = null
         lastCategory = null
+        speakTextEn = null
+        speakTextTl = null
         if (isEnglish) {
             titleBar.text = "I'm not sure"
             infoTitle.text = "Unknown item"
@@ -368,6 +470,8 @@ class ScannerActivity : AppCompatActivity() {
     private fun renderPredictionOrIdle() {
         val pred = lastPrediction
         if (pred == null) {
+            speakTextEn = null
+            speakTextTl = null
             if (isEnglish) {
                 titleBar.text = "Camera Ready"
                 infoTitle.text = "Scan a trash item"
@@ -388,8 +492,10 @@ class ScannerActivity : AppCompatActivity() {
         val materialNameTl: String
         val categoryId: Int
         val isNonBio: Boolean
-        val categoryEn: String
-        val categoryTl: String
+        val categoryNameEn: String
+        val categoryNameTl: String
+        val categoryDescEn: String
+        val categoryDescTl: String
 
         if (material != null) {
             materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: pred.label
@@ -398,12 +504,15 @@ class ScannerActivity : AppCompatActivity() {
             categoryId = material.categoryId
             isNonBio = (categoryId == 2)
 
-            categoryEn = category?.name ?: if (isNonBio) "Non-biodegradable" else "Biodegradable"
-            categoryTl = when (categoryId) {
-                1 -> "Nabubulok"
-                2 -> "Di-nabubulok"
-                else -> if (isNonBio) "Di-nabubulok" else "Nabubulok"
-            }
+            categoryNameEn =
+                category?.nameEn ?: if (isNonBio) "Non-biodegradable" else "Biodegradable"
+            categoryNameTl =
+                category?.nameTl ?: if (isNonBio) "Di-Nabubulok" else "Nabubulok"
+
+            categoryDescEn =
+                category?.descriptionEn ?: if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
+            categoryDescTl =
+                category?.descriptionTl ?: if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
         } else {
             materialNameEn = pred.label
             materialNameTl = pred.label
@@ -412,30 +521,28 @@ class ScannerActivity : AppCompatActivity() {
             categoryId = guessedCategoryId
             isNonBio = (categoryId == 2)
 
-            categoryEn = if (isNonBio) "Non-biodegradable" else "Biodegradable"
-            categoryTl = if (isNonBio) "Di-nabubulok" else "Nabubulok"
+            categoryNameEn = if (isNonBio) "Non-biodegradable" else "Biodegradable"
+            categoryNameTl = if (isNonBio) "Di-Nabubulok" else "Nabubulok"
+
+            categoryDescEn =
+                if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
+            categoryDescTl =
+                if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
         }
 
         val binRes = if (isNonBio) R.drawable.ic_blue_bin else R.drawable.ic_green_bin
 
+        speakTextEn = "$materialNameEn. $categoryNameEn. $categoryDescEn"
+        speakTextTl = "$materialNameTl. $categoryNameTl. $categoryDescTl"
+
         if (isEnglish) {
             titleBar.text = materialNameEn
-            infoTitle.text = categoryEn
-            val binSentence = if (isNonBio) {
-                "Throw it in the BLUE bin."
-            } else {
-                "Throw it in the GREEN bin."
-            }
-            infoText.text = "This looks like: $materialNameEn\n$binSentence"
+            infoTitle.text = categoryNameEn
+            infoText.text = "$materialNameEn\n$categoryDescEn"
         } else {
             titleBar.text = materialNameTl
-            infoTitle.text = categoryTl
-            val binSentence = if (isNonBio) {
-                "Itapon ito sa ASUL na basurahan."
-            } else {
-                "Itapon ito sa BERDENG basurahan."
-            }
-            infoText.text = "Ito ay: $materialNameTl\n$binSentence"
+            infoTitle.text = categoryNameTl
+            infoText.text = "$materialNameTl\n$categoryDescTl"
         }
 
         val imageName = material?.image ?: ""
@@ -459,22 +566,27 @@ class ScannerActivity : AppCompatActivity() {
         lastCategory = null
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getInstance(applicationContext)
+            try {
+                val db = AppDatabase.getInstance(applicationContext)
 
-            val candidates = mapLabelToMaterialCandidates(prediction.label)
-            var material: WasteMaterial? = null
+                val candidates = mapLabelToMaterialCandidates(prediction.label)
+                var material: WasteMaterial? = null
 
-            for (c in candidates) {
-                material = db.recycLensDao().getMaterialByName(c)
-                if (material != null) break
+                for (c in candidates) {
+                    material = db.recycLensDao().getMaterialByName(c)
+                    if (material != null) break
+                }
+
+                val category = material?.let {
+                    db.recycLensDao().getCategoryById(it.categoryId)
+                }
+
+                lastMaterial = material
+                lastCategory = category
+            } catch (e: Exception) {
+                lastMaterial = null
+                lastCategory = null
             }
-
-            val category = material?.let {
-                db.recycLensDao().getCategoryById(it.categoryId)
-            }
-
-            lastMaterial = material
-            lastCategory = category
 
             withContext(Dispatchers.Main) {
                 renderPredictionOrIdle()
@@ -498,29 +610,35 @@ class ScannerActivity : AppCompatActivity() {
                 list.add("Banana Peel")
                 list.add("Banana peels")
             }
+
             lower.contains("apple") -> {
                 list.add("Apple Core")
                 list.add("Apple")
             }
+
             lower.contains("mango") -> {
                 list.add("Mango Peel")
                 list.add("Mango")
             }
+
             lower.contains("plastic cup") -> list.add("Plastic Cup")
             lower.contains("bottle") -> list.add("Plastic Bottle")
             lower.contains("tissue") -> {
                 list.add("Tissue")
                 list.add("Tissue Roll")
             }
+
             lower.contains("grass") -> {
                 list.add("Grass")
                 list.add("Bermuda Grass")
             }
+
             lower.contains("leaf") || lower.contains("leaves") -> list.add("Leaves")
             lower.contains("styro") || lower.contains("tray") -> {
                 list.add("Styrofoam Tray")
                 list.add("Styrofoam Box")
             }
+
             lower.contains("ampalaya") -> list.add("Ampalaya")
             lower.contains("kangkong") -> list.add("Kangkong")
             lower.contains("okra") -> list.add("Okra")
@@ -603,8 +721,6 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun chooseFinalLabel(pred: Top2Prediction): Pair<String, Float>? {
-        if (pred.bestScore < THRESHOLD) return null
-
         var finalLabel = pred.bestLabel
         val bestLower = pred.bestLabel.lowercase()
         val secondLabel = pred.secondLabel
@@ -623,7 +739,6 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun chooseFinalLabelSimple(pred: Top2Prediction): Pair<String, Float>? {
-        if (pred.bestScore < THRESHOLD) return null
         return pred.bestLabel to pred.bestScore
     }
 

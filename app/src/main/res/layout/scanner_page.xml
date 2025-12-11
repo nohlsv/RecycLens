@@ -117,7 +117,10 @@
                 android:text="@string/info_title"
                 android:textColor="@color/blueTitle"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/infoText"

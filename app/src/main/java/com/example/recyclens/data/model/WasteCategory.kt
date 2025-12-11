@@ -11,6 +11,18 @@ data class WasteCategory(
     @ColumnInfo(name = "category_id")
     val categoryId: Int,
 
-    @ColumnInfo(name = "name")
-    val name: String
+    @ColumnInfo(name = "name_en")
+    val nameEn: String?,
+
+    @ColumnInfo(name = "name_tl")
+    val nameTl: String?,
+
+    @ColumnInfo(name = "description_en")
+    val descriptionEn: String?,
+
+    @ColumnInfo(name = "description_tl")
+    val descriptionTl: String?,
+
+    @ColumnInfo(name = "image")
+    val image: String?
 )

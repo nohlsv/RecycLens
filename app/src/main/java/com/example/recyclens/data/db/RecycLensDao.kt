@@ -8,7 +8,12 @@ import com.example.recyclens.data.model.WasteMaterial
 @Dao
 interface RecycLensDao {
 
-    @Query("SELECT * FROM waste_material WHERE name_en = :name OR name_tl = :name LIMIT 1")
+    @Query("""
+        SELECT * FROM waste_material
+        WHERE LOWER(name_en) = LOWER(:name)
+           OR LOWER(name_tl) = LOWER(:name)
+        LIMIT 1
+    """)
     suspend fun getMaterialByName(name: String): WasteMaterial?
 
     @Query("SELECT * FROM waste_category WHERE category_id = :id LIMIT 1")
