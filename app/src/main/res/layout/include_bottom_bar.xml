@@ -3,58 +3,84 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="96dp"
+    android:layout_height="wrap_content"
     android:background="@drawable/bottom_bar_bg"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
     android:paddingStart="16dp"
     android:paddingEnd="16dp">
 
-    <!-- Left: small orange camera -->
     <ImageButton
         android:id="@+id/navScan"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="60dp"
-        android:layout_marginTop="10dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:background="@drawable/btn_orange_circle"
-        android:contentDescription="@string/cd_open_camera"
         android:src="@drawable/typcn_camera"
-        android:adjustViewBounds="true"
+        android:contentDescription="@string/cd_open_camera"
         android:scaleType="centerInside"
-        app:layout_constraintBottom_toTopOf="@+id/labelsRow"
+        android:padding="10dp"
+        android:layout_marginStart="24dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintBottom_toTopOf="@+id/labelScan"
+        app:layout_constraintVertical_chainStyle="packed" />
 
-    <!-- Center: play icon -->
+    <TextView
+        android:id="@+id/labelScan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan Trash"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="2"
+        android:layout_marginTop="2dp"
+        app:layout_constraintTop_toBottomOf="@id/navScan"
+        app:layout_constraintStart_toStartOf="@id/navScan"
+        app:layout_constraintEnd_toEndOf="@id/navScan"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+
     <ImageView
         android:id="@+id/navPlay"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="48dp"
         android:src="@drawable/play_game"
-        android:adjustViewBounds="true"
+        android:contentDescription="@string/cd_open_games"
         android:scaleType="centerInside"
         android:clickable="true"
         android:focusable="true"
-        android:foreground="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/cd_open_games"
-        app:layout_constraintTop_toTopOf="@id/navScan"
-        app:layout_constraintBottom_toBottomOf="@id/navScan"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintStart_toEndOf="@id/navScan"
+        app:layout_constraintTop_toTopOf="@id/navScan" />
+
+    <TextView
+        android:id="@+id/labelPlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Play Games"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="2"
+        android:layout_marginTop="2dp"
+        app:layout_constraintTop_toBottomOf="@id/navPlay"
+        app:layout_constraintStart_toStartOf="@id/navPlay"
+        app:layout_constraintEnd_toEndOf="@id/navPlay" />
 
 
-    <!-- Right: language pill -->
     <RelativeLayout
         android:id="@+id/langToggle"
-        android:layout_width="64dp"
-        android:layout_height="34dp"
+        android:layout_width="60dp"
+        android:layout_height="30dp"
         android:background="@drawable/lang_toggle_knob"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
-        app:layout_constraintTop_toTopOf="@id/navScan"
-        app:layout_constraintBottom_toBottomOf="@id/navScan"
-        app:layout_constraintEnd_toStartOf="@+id/btnSpeaker"
-        android:layout_marginEnd="16dp">
+        android:layout_marginEnd="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/langText"
@@ -63,63 +89,29 @@
             android:text="EN"
             android:textStyle="bold"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:layout_centerVertical="true"
             android:layout_alignParentStart="true"/>
 
         <View
             android:id="@+id/langKnob"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:background="@drawable/lang_toggle_knob"/>
     </RelativeLayout>
 
-    <!-- Rightmost: speaker -->
     <ImageButton
         android:id="@+id/btnSpeaker"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:background="@android:color/transparent"
         android:src="@drawable/wpf_speaker"
-        android:adjustViewBounds="true"
         android:scaleType="centerInside"
-        app:layout_constraintTop_toTopOf="@id/navScan"
-        app:layout_constraintBottom_toBottomOf="@id/navScan"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:layout_marginTop="6dp"
+        app:layout_constraintTop_toBottomOf="@id/langToggle"
+        app:layout_constraintEnd_toEndOf="@id/langToggle"
+        app:layout_constraintStart_toStartOf="@id/langToggle"/>
 
-    <!-- Bottom labels -->
-    <LinearLayout
-        android:id="@+id/labelsRow"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <TextView
-            android:id="@+id/labelScan"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Scan Trash"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/labelPlay"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Play Games"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
