@@ -69,6 +69,8 @@ dependencies {
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.slice.builders)
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)

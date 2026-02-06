@@ -6,12 +6,17 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -23,10 +28,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
 import com.example.recyclens.data.db.AppDatabase
 import com.example.recyclens.data.model.WasteCategory
@@ -36,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.Locale
@@ -340,16 +349,51 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun captureFrameFromPreview() {
         titleBar.text = if (isEnglish) "Taking a picture..." else "Kumukuha ng larawan..."
-        previewView.post {
-            val bmp = previewView.bitmap
-            if (bmp != null) {
-                showCapturedPhoto(bmp)
-                classifyAndFetch(bmp)
-            } else {
-                titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                Toast.makeText(this, "Unable to capture picture", Toast.LENGTH_SHORT).show()
-            }
+        val capture = imageCapture
+        if (capture == null) {
+            titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
+            Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        capture.takePicture(
+            cameraExecutor,
+            object : ImageCapture.OnImageCapturedCallback() {
+                override fun onCaptureSuccess(image: ImageProxy) {
+                    try {
+                        val rotation = image.imageInfo.rotationDegrees
+                        val bitmap = imageProxyToBitmap(image)
+                        image.close()
+                        if (bitmap == null) {
+                            runOnUiThread {
+                                titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
+                                Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                            }
+                            return
+                        }
+                        val rotated = rotateBitmapIfNeeded(bitmap, rotation)
+                        Log.d("RECYC_LENS_ML", "Captured bitmap ${rotated.width}x${rotated.height}, rotation=$rotation")
+                        runOnUiThread {
+                            showCapturedPhoto(rotated)
+                            classifyAndFetch(rotated)
+                        }
+                    } catch (e: Exception) {
+                        image.close()
+                        runOnUiThread {
+                            titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
+                            Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    runOnUiThread {
+                        titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
+                        Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        )
     }
 
     private fun showCapturedPhoto(bitmap: Bitmap) {
@@ -434,10 +478,25 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun classifyBitmap(bitmap: Bitmap): PredictedItem? {
         val pred2 = classifyWithModel(bitmap, model2Interpreter, model2Labels)
-        val res2 = pred2?.let { chooseFinalLabel(it) }
+        val validPred2 = pred2?.takeIf { it.bestScore >= THRESHOLD }
+        val res2 = validPred2?.let { chooseFinalLabel(it) }
 
         val predExtra = classifyWithModel(bitmap, extraInterpreter, extraLabels)
-        val resExtra = predExtra?.let { chooseFinalLabelSimple(it) }
+        val validExtra = predExtra?.takeIf { it.bestScore >= THRESHOLD }
+        val resExtra = validExtra?.let { chooseFinalLabelSimple(it) }
+
+        if (pred2 != null) {
+            Log.d(
+                "RECYC_LENS_ML",
+                "model2 top1=${pred2.bestLabel} ${pred2.bestScore}, top2=${pred2.secondLabel ?: "-"} ${pred2.secondScore ?: 0f}, pass=${validPred2 != null}"
+            )
+        }
+        if (predExtra != null) {
+            Log.d(
+                "RECYC_LENS_ML",
+                "model top1=${predExtra.bestLabel} ${predExtra.bestScore}, top2=${predExtra.secondLabel ?: "-"} ${predExtra.secondScore ?: 0f}, pass=${validExtra != null}"
+            )
+        }
 
         var bestPair: Pair<String, Float>? = null
         if (res2 != null) bestPair = res2
@@ -445,7 +504,11 @@ class ScannerActivity : AppCompatActivity() {
             bestPair = resExtra
         }
 
-        val chosen = bestPair ?: return null
+        val chosen = bestPair ?: run {
+            Log.d("RECYC_LENS_ML", "Rejected both models below threshold")
+            return null
+        }
+        Log.d("RECYC_LENS_ML", "Chosen label=${chosen.first} score=${chosen.second}")
         return PredictedItem(chosen.first, chosen.second)
     }
 
@@ -626,6 +689,33 @@ class ScannerActivity : AppCompatActivity() {
             list.add(label.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
         }
 
+        when (lower) {
+            "snack wrapper" -> list.add("Candy Wrapper")
+            "leaves" -> list.add("Leaf")
+            "leaf" -> list.add("Leaf")
+            "bottle" -> {
+                list.add("Bottle")
+                list.add("Plastic Bottle")
+            }
+            "tissue roll" -> list.add("Tissue")
+            "styrofoam tray" -> list.add("Styrofoam Box")
+            "apple", "mango", "banana", "orange" -> {
+                list.add("Fruit")
+                if (lower == "banana") list.add("Banana Peel")
+                if (lower == "mango") list.add("Mango Peel")
+                if (lower == "apple") list.add("Apple Core")
+            }
+            "pet bottle" -> {
+                list.add("Bottle")
+                list.add("Plastic Bottle")
+            }
+            "styrofoam cup" -> {
+                list.add("Styrofoam Box")
+                list.add("Styrofoam Tray")
+            }
+            "tissue core" -> list.add("Tissue")
+        }
+
         when {
             lower.contains("banana") -> {
                 list.add("Banana Peel")
@@ -667,6 +757,21 @@ class ScannerActivity : AppCompatActivity() {
                 list.add("Eggplant")
                 list.add("Talong")
             }
+            lower.contains("orange") -> list.add("Fruit")
+            lower.contains("pet bottle") -> {
+                list.add("Bottle")
+                list.add("Plastic Bottle")
+            }
+            lower.contains("styrofoam cup") -> {
+                list.add("Styrofoam Box")
+                list.add("Styrofoam Tray")
+            }
+            lower.contains("tissue core") -> list.add("Tissue")
+        }
+
+        // Generic vegetable fallback to existing DB entry
+        if (lower in listOf("ampalaya", "okra", "eggplant", "kangkong")) {
+            list.add("Fruit")
         }
 
         return list.distinct()
@@ -700,15 +805,16 @@ class ScannerActivity : AppCompatActivity() {
 
         val square = cropCenterSquare(bitmap)
         val resized = Bitmap.createScaledBitmap(square, INPUT_SIZE, INPUT_SIZE, true)
+        Log.d("RECYC_LENS_ML", "Input to model: ${resized.width}x${resized.height}")
 
         val input = Array(1) { Array(INPUT_SIZE) { Array(INPUT_SIZE) { FloatArray(3) } } }
         for (y in 0 until INPUT_SIZE) {
-            for (x in 0 until INPUT_SIZE) {
-                val px = resized.getPixel(x, y)
-                input[0][y][x][0] = Color.red(px) / 255f
-                input[0][y][x][1] = Color.green(px) / 255f
-                input[0][y][x][2] = Color.blue(px) / 255f
-            }
+        for (x in 0 until INPUT_SIZE) {
+            val px = resized.getPixel(x, y)
+            input[0][y][x][0] = Color.red(px) / 255f
+            input[0][y][x][1] = Color.green(px) / 255f
+            input[0][y][x][2] = Color.blue(px) / 255f
+        }
         }
 
         val output = Array(1) { FloatArray(labels.size) }
@@ -739,6 +845,47 @@ class ScannerActivity : AppCompatActivity() {
         val secondScoreFinal = if (secondIdx >= 0) secondScore else null
 
         return Top2Prediction(bestLabel, bestScore, secondLabel, secondScoreFinal)
+    }
+
+    private fun imageProxyToBitmap(image: ImageProxy): Bitmap? {
+        val yBuffer = image.planes[0].buffer
+        val uBuffer = image.planes[1].buffer
+        val vBuffer = image.planes[2].buffer
+
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+
+        val nv21 = ByteArray(ySize + uSize + vSize)
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+
+        val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
+        val out = ByteArrayOutputStream()
+        yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 90, out)
+        val imageBytes = out.toByteArray()
+        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+
+    private fun rotateBitmapIfNeeded(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
+        if (rotationDegrees == 0) return bitmap
+        val matrix = Matrix()
+        matrix.postRotate(rotationDegrees.toFloat())
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    private fun applyExifOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+            else -> return bitmap
+        }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
     private fun chooseFinalLabel(pred: Top2Prediction): Pair<String, Float>? {
@@ -788,6 +935,13 @@ class ScannerActivity : AppCompatActivity() {
         uri: Uri,
         maxDim: Int = 1600
     ): Bitmap? {
+        val orientation = resolver.openInputStream(uri)?.use {
+            ExifInterface(it).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+        } ?: ExifInterface.ORIENTATION_NORMAL
+
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         val first = resolver.openInputStream(uri) ?: return null
         first.use {
@@ -813,7 +967,8 @@ class ScannerActivity : AppCompatActivity() {
 
         val input2 = resolver.openInputStream(uri) ?: return null
         input2.use {
-            return BitmapFactory.decodeStream(it, null, opts)
+            val bmp = BitmapFactory.decodeStream(it, null, opts) ?: return null
+            return applyExifOrientation(bmp, orientation)
         }
     }
 }
