@@ -45,6 +45,7 @@ import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.Locale
@@ -364,15 +365,22 @@ class ScannerActivity : AppCompatActivity() {
             Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show()
             return
         }
+        val photoFile = try {
+            File.createTempFile("recyclens_capture_", ".jpg", cacheDir)
+        } catch (e: Exception) {
+            Log.e("RECYC_LENS_ML", "Failed to create temp file for capture", e)
+            Toast.makeText(this, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+            return
+        }
 
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         capture.takePicture(
+            outputOptions,
             cameraExecutor,
-            object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     try {
-                        val rotation = image.imageInfo.rotationDegrees
-                        val bitmap = imageProxyToBitmap(image)
-                        image.close()
+                        val bitmap = decodeBitmapFromFileSafely(photoFile, maxDim = 1600)
                         if (bitmap == null) {
                             runOnUiThread {
                                 titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
@@ -381,25 +389,36 @@ class ScannerActivity : AppCompatActivity() {
                             }
                             return
                         }
-                        val rotated = rotateBitmapIfNeeded(bitmap, rotation)
-                        Log.d("RECYC_LENS_ML", "Captured bitmap ${rotated.width}x${rotated.height}, rotation=$rotation")
+                        Log.d("RECYC_LENS_ML", "Captured bitmap ${bitmap.width}x${bitmap.height} from file")
                         runOnUiThread {
-                            showCapturedPhoto(rotated)
-                            classifyAndFetch(rotated)
+                            showCapturedPhoto(bitmap)
+                            classifyAndFetch(bitmap)
                         }
                     } catch (e: Exception) {
-                        image.close()
+                        Log.e("RECYC_LENS_ML", "Capture decode failed", e)
                         runOnUiThread {
                             titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                            Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                            val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                            Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    } finally {
+                        try {
+                            if (photoFile.exists()) photoFile.delete()
+                        } catch (_: Exception) {
                         }
                     }
                 }
 
                 override fun onError(exception: ImageCaptureException) {
+                    Log.e("RECYC_LENS_ML", "Capture error", exception)
                     runOnUiThread {
                         titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                        Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                        val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                        Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                    try {
+                        if (photoFile.exists()) photoFile.delete()
+                    } catch (_: Exception) {
                     }
                 }
             }
@@ -1000,5 +1019,35 @@ class ScannerActivity : AppCompatActivity() {
             val bmp = BitmapFactory.decodeStream(it, null, opts) ?: return null
             return applyExifOrientation(bmp, orientation)
         }
+    }
+
+    private fun decodeBitmapFromFileSafely(file: File, maxDim: Int = 1600): Bitmap? {
+        val orientation = try {
+            ExifInterface(file.absolutePath).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+        } catch (_: Exception) {
+            ExifInterface.ORIENTATION_NORMAL
+        }
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            val raw = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+            return applyExifOrientation(raw, orientation)
+        }
+
+        val maxSrc = maxOf(bounds.outWidth, bounds.outHeight)
+        var sample = 1
+        while (maxSrc / sample > maxDim) sample *= 2
+
+        val opts = BitmapFactory.Options().apply {
+            inJustDecodeBounds = false
+            inSampleSize = sample
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bmp = BitmapFactory.decodeFile(file.absolutePath, opts) ?: return null
+        return applyExifOrientation(bmp, orientation)
     }
 }
