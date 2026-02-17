@@ -31,19 +31,27 @@
 
         <activity
             android:name=".GameSelectActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".ChooseLevelActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".TrashSortingActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".StreetCleanupActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
-        <activity android:name=".ScannerActivity" />
+        <activity 
+            android:name=".ScannerActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -99,28 +99,36 @@ class ScannerActivity : AppCompatActivity() {
         private const val EXTRA_MODEL = "model.tflite"
         private const val EXTRA_LABELS_FILE = "model_labels.txt"
         private const val INPUT_SIZE = 224
-        private const val THRESHOLD = 0.50f
-        private const val CUP_BOTTLE_MARGIN = 0.10f
+        private const val THRESHOLD = 0.40f  // Lowered from 0.50f for better detection
+        private const val CUP_BOTTLE_MARGIN = 0.15f  // Increased margin for better cup/bottle differentiation
     }
 
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) startCamera() else Toast.makeText(
-                this,
-                "Camera permission required",
-                Toast.LENGTH_SHORT
-            ).show()
+            if (granted) {
+                startCamera()
+            } else {
+                val msg = if (isEnglish) 
+                    "Camera permission is required to scan items" 
+                else 
+                    "Kailangan ng camera permission para mag-scan"
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            }
         }
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            if (uri == null) return@registerForActivityResult
+            if (uri == null) {
+                Log.w("RECYC_LENS_ML", "Gallery picker returned null URI")
+                return@registerForActivityResult
+            }
             val bmp = decodeBitmapFromUriSafely(contentResolver, uri, maxDim = 1600)
             if (bmp != null) {
                 showCapturedPhoto(bmp)
                 classifyAndFetch(bmp)
             } else {
-                Toast.makeText(this, "Could not open image", Toast.LENGTH_SHORT).show()
+                val msg = if (isEnglish) "Could not open image" else "Hindi mabuksan ang larawan"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -333,7 +341,8 @@ class ScannerActivity : AppCompatActivity() {
             }
 
             imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)  // Changed for better image quality
+                .setTargetRotation(windowManager.defaultDisplay.rotation)
                 .build()
 
             provider.unbindAll()
@@ -367,7 +376,8 @@ class ScannerActivity : AppCompatActivity() {
                         if (bitmap == null) {
                             runOnUiThread {
                                 titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                                Toast.makeText(this@ScannerActivity, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+                                val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                                Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
                             }
                             return
                         }
@@ -793,6 +803,7 @@ class ScannerActivity : AppCompatActivity() {
         val size = minOf(src.width, src.height)
         val x = (src.width - size) / 2
         val y = (src.height - size) / 2
+        Log.d("RECYC_LENS_ML", "Cropping ${src.width}x${src.height} to ${size}x${size} at ($x, $y)")
         return Bitmap.createBitmap(src, x, y, size, size)
     }
 
@@ -805,16 +816,16 @@ class ScannerActivity : AppCompatActivity() {
 
         val square = cropCenterSquare(bitmap)
         val resized = Bitmap.createScaledBitmap(square, INPUT_SIZE, INPUT_SIZE, true)
-        Log.d("RECYC_LENS_ML", "Input to model: ${resized.width}x${resized.height}")
+        Log.d("RECYC_LENS_ML", "Input to model: ${resized.width}x${resized.height}, original: ${bitmap.width}x${bitmap.height}")
 
         val input = Array(1) { Array(INPUT_SIZE) { Array(INPUT_SIZE) { FloatArray(3) } } }
         for (y in 0 until INPUT_SIZE) {
-        for (x in 0 until INPUT_SIZE) {
-            val px = resized.getPixel(x, y)
-            input[0][y][x][0] = Color.red(px) / 255f
-            input[0][y][x][1] = Color.green(px) / 255f
-            input[0][y][x][2] = Color.blue(px) / 255f
-        }
+            for (x in 0 until INPUT_SIZE) {
+                val px = resized.getPixel(x, y)
+                input[0][y][x][0] = Color.red(px) / 255f
+                input[0][y][x][1] = Color.green(px) / 255f
+                input[0][y][x][2] = Color.blue(px) / 255f
+            }
         }
 
         val output = Array(1) { FloatArray(labels.size) }
@@ -840,6 +851,12 @@ class ScannerActivity : AppCompatActivity() {
             }
         }
 
+        // Log top 3 predictions for debugging
+        val sortedPredictions = scores.mapIndexed { i, score -> labels.getOrNull(i) to score }
+            .sortedByDescending { it.second }
+            .take(3)
+        Log.d("RECYC_LENS_ML", "Top 3: ${sortedPredictions.joinToString { "${it.first}=${String.format("%.3f", it.second)}" }}")
+
         val bestLabel = labels.getOrNull(bestIdx) ?: return null
         val secondLabel = if (secondIdx >= 0) labels.getOrNull(secondIdx) else null
         val secondScoreFinal = if (secondIdx >= 0) secondScore else null
@@ -848,24 +865,35 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun imageProxyToBitmap(image: ImageProxy): Bitmap? {
-        val yBuffer = image.planes[0].buffer
-        val uBuffer = image.planes[1].buffer
-        val vBuffer = image.planes[2].buffer
+        return try {
+            val planes = image.planes
+            if (planes.size < 3) {
+                Log.e("RECYC_LENS_ML", "ImageProxy has insufficient planes: ${planes.size}")
+                return null
+            }
+            
+            val yBuffer = planes[0].buffer
+            val uBuffer = planes[1].buffer
+            val vBuffer = planes[2].buffer
 
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
+            val ySize = yBuffer.remaining()
+            val uSize = uBuffer.remaining()
+            val vSize = vBuffer.remaining()
 
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
+            val nv21 = ByteArray(ySize + uSize + vSize)
+            yBuffer.get(nv21, 0, ySize)
+            vBuffer.get(nv21, ySize, vSize)
+            uBuffer.get(nv21, ySize + vSize, uSize)
 
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 90, out)
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 90, out)
+            val imageBytes = out.toByteArray()
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        } catch (e: Exception) {
+            Log.e("RECYC_LENS_ML", "Failed to convert ImageProxy to Bitmap", e)
+            null
+        }
     }
 
     private fun rotateBitmapIfNeeded(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
@@ -948,7 +976,9 @@ class ScannerActivity : AppCompatActivity() {
             BitmapFactory.decodeStream(it, null, bounds)
         }
 
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        // Check for valid dimensions (minimum 50x50)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0 || bounds.outWidth < 50 || bounds.outHeight < 50) {
+            Log.w("RECYC_LENS_ML", "Image too small or invalid: ${bounds.outWidth}x${bounds.outHeight}")
             val raw = resolver.openInputStream(uri) ?: return null
             raw.use {
                 return BitmapFactory.decodeStream(it)
