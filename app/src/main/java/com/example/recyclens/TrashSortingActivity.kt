@@ -25,6 +25,8 @@ class TrashSortingActivity : AppCompatActivity() {
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
+    @Volatile
+    private var isActivityInForeground = false
 
     private lateinit var gameArea: FrameLayout
     private lateinit var btnStart: TextView
@@ -51,6 +53,11 @@ class TrashSortingActivity : AppCompatActivity() {
     private var selectedLevel = 1
     private var score = 0
     private var wrongCount = 0
+    private var roundStartTriggered = false
+
+    private val startRoundFallback = Runnable {
+        beginRoundIfNeeded()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,17 +82,20 @@ class TrashSortingActivity : AppCompatActivity() {
                     }
                     override fun onDone(utteranceId: String?) {
                         runOnUiThread {
+                            if (!isActivityInForeground || isFinishing || isDestroyed) return@runOnUiThread
                             MusicManager.start(this@TrashSortingActivity, "trash_sorting_music")
                             if (utteranceId == "TRASH_START_GAME") {
-                                gameArea.post {
-                                    showNextItem()
-                                }
+                                beginRoundIfNeeded()
                             }
                         }
                     }
                     override fun onError(utteranceId: String?) {
                         runOnUiThread {
+                            if (!isActivityInForeground || isFinishing || isDestroyed) return@runOnUiThread
                             MusicManager.start(this@TrashSortingActivity, "trash_sorting_music")
+                            if (utteranceId == "TRASH_START_GAME") {
+                                beginRoundIfNeeded()
+                            }
                         }
                     }
                 })
@@ -140,17 +150,21 @@ class TrashSortingActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isActivityInForeground = true
         MusicManager.start(this, "trash_sorting_music")
     }
 
     override fun onPause() {
+        isActivityInForeground = false
         super.onPause()
+        gameArea.removeCallbacks(startRoundFallback)
         MusicManager.pause()
         stopTts()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        gameArea.removeCallbacks(startRoundFallback)
         stopTts()
         tts?.shutdown()
         tts = null
@@ -357,6 +371,8 @@ class TrashSortingActivity : AppCompatActivity() {
 
     private fun startNewRound() {
         btnStart.text = "Sorting..."
+        gameArea.removeCallbacks(startRoundFallback)
+        roundStartTriggered = false
         gameArea.removeAllViews()
         answeredCount = 0
         score = 0
@@ -377,7 +393,22 @@ class TrashSortingActivity : AppCompatActivity() {
         resetScoreAndCircles(totalToSort)
 
         val intro = "Trash sorting game started. Drag each trash item into the correct bin. Biodegradable trash goes in the green bin, and non biodegradable trash goes in the blue bin."
-        speak(intro, "TRASH_START_GAME")
+        if (ttsReady) {
+            speak(intro, "TRASH_START_GAME")
+            gameArea.postDelayed(startRoundFallback, 7000L)
+        } else {
+            beginRoundIfNeeded()
+        }
+    }
+
+    private fun beginRoundIfNeeded() {
+        if (roundStartTriggered) return
+        if (!isActivityInForeground || isFinishing || isDestroyed) return
+        roundStartTriggered = true
+        gameArea.removeCallbacks(startRoundFallback)
+        gameArea.post {
+            showNextItem()
+        }
     }
 
     private fun resetScoreAndCircles(count: Int) {
@@ -460,20 +491,34 @@ class TrashSortingActivity : AppCompatActivity() {
     private fun attachDragListener(view: View) {
         var dX = 0f
         var dY = 0f
+        var startX = 0f
+        var startY = 0f
+        val gameAreaLocation = IntArray(2)
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    dX = v.x - event.rawX
-                    dY = v.y - event.rawY
+                    gameArea.getLocationOnScreen(gameAreaLocation)
+                    val touchX = event.rawX - gameAreaLocation[0]
+                    val touchY = event.rawY - gameAreaLocation[1]
+                    startX = v.x
+                    startY = v.y
+                    dX = v.x - touchX
+                    dY = v.y - touchY
+                    v.bringToFront()
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    v.x = event.rawX + dX
-                    v.y = event.rawY + dY
+                    val touchX = event.rawX - gameAreaLocation[0]
+                    val touchY = event.rawY - gameAreaLocation[1]
+                    val maxX = (gameArea.width - v.width).toFloat().coerceAtLeast(0f)
+                    val bottomOverflow = dp(180).toFloat()
+                    val maxY = (gameArea.height + bottomOverflow - v.height).coerceAtLeast(0f)
+                    v.x = (touchX + dX).coerceIn(0f, maxX)
+                    v.y = (touchY + dY).coerceIn(0f, maxY)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    handleDrop(v, event.rawX.toInt(), event.rawY.toInt())
+                    handleDrop(v, event.rawX.toInt(), event.rawY.toInt(), startX, startY)
                     true
                 }
                 else -> false
@@ -481,7 +526,7 @@ class TrashSortingActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleDrop(view: View, dropRawX: Int, dropRawY: Int) {
+    private fun handleDrop(view: View, dropRawX: Int, dropRawY: Int, startX: Float, startY: Float) {
         val item = view.tag as? WasteItem ?: return
 
         val greenRect = Rect()
@@ -496,7 +541,7 @@ class TrashSortingActivity : AppCompatActivity() {
             val msg = "Drop the trash inside the green or blue bin."
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             speak(msg, "TRASH_HINT")
-            view.animate().translationX(0f).translationY(0f).setDuration(200).start()
+            view.animate().x(startX).y(startY).setDuration(200).start()
             return
         }
 

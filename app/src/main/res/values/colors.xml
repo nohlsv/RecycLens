@@ -14,7 +14,7 @@
     <!-- Needed by vector drawables & landing page -->
     <color name="blue_bin">#2B6CB0</color>
     <color name="green_bin">#43A047</color>
-    <color name="blue_primary">#005ED5</color>
+    <color name="blue_primary">#5765FF</color>
     <color name="yellow_button">#F6C437</color>
 
     <!-- Scanner mock specific -->

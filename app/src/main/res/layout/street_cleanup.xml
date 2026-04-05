@@ -4,6 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="@drawable/street_cleanup_game_flood">
 
     <ImageButton
@@ -28,6 +30,36 @@
         app:layout_constraintStart_toEndOf="@id/btnBackStreet"
         app:layout_constraintBottom_toBottomOf="@id/btnBackStreet"
         android:layout_marginStart="8dp"/>
+
+    <LinearLayout
+        android:id="@+id/binRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintBottom_toTopOf="@id/btnStartStreet"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/gameAreaStreet">
+
+        <ImageView
+            android:id="@+id/binGreenStreet"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="Green bin - Biodegradable"
+            android:src="@drawable/green_bin" />
+
+        <ImageView
+            android:id="@+id/binBlueStreet"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginStart="16dp"
+            android:contentDescription="Blue bin - Non-biodegradable"
+            android:src="@drawable/blue_bin" />
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/btnInfoStreet"
@@ -58,6 +90,8 @@
         android:id="@+id/gameAreaStreet"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/tvLevel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -65,35 +99,6 @@
         android:layout_margin="12dp"/>
 
     <!-- BIN ROW: GREEN + BLUE BINS ABOVE START GAME -->
-    <LinearLayout
-        android:id="@+id/binRow"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        app:layout_constraintTop_toBottomOf="@id/gameAreaStreet"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnStartStreet">
-
-        <ImageView
-            android:id="@+id/binGreenStreet"
-            android:layout_width="90dp"
-            android:layout_height="90dp"
-            android:layout_marginEnd="16dp"
-            android:src="@drawable/green_bin"
-            android:contentDescription="Green bin - Biodegradable"/>
-
-        <ImageView
-            android:id="@+id/binBlueStreet"
-            android:layout_width="90dp"
-            android:layout_height="90dp"
-            android:layout_marginStart="16dp"
-            android:src="@drawable/blue_bin"
-            android:contentDescription="Blue bin - Non-biodegradable"/>
-    </LinearLayout>
 
     <TextView
         android:id="@+id/btnStartStreet"

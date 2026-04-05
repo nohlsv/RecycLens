@@ -46,11 +46,14 @@ import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 
 class ScannerActivity : AppCompatActivity() {
 
@@ -95,8 +98,10 @@ class ScannerActivity : AppCompatActivity() {
     private var wasMusicPlayingBeforeTts: Boolean = false
 
     companion object {
-        private const val MODEL2 = "model2.tflite"
-        private const val MODEL2_LABELS_FILE = "model2_labels.txt"
+        private const val MODEL2 = "best_float32.tflite"
+        private const val MODEL2_LABELS_FILE = "best_int8_labels.txt"
+        // private const val MODEL2 = "model2.tflite"
+        // private const val MODEL2_LABELS_FILE = "model2_labels.txt"
         private const val EXTRA_MODEL = "model.tflite"
         private const val EXTRA_LABELS_FILE = "model_labels.txt"
         private const val INPUT_SIZE = 224
@@ -213,7 +218,6 @@ class ScannerActivity : AppCompatActivity() {
         super.onDestroy()
         cameraExecutor.shutdown()
         model2Interpreter.close()
-        extraInterpreter.close()
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
@@ -462,13 +466,7 @@ class ScannerActivity : AppCompatActivity() {
             .bufferedReader()
             .readLines()
             .filter { it.isNotBlank() }
-
-        val mappedExtra = loadModelMapped(EXTRA_MODEL)
-        extraInterpreter = Interpreter(mappedExtra, Interpreter.Options())
-        extraLabels = assets.open(EXTRA_LABELS_FILE)
-            .bufferedReader()
-            .readLines()
-            .filter { it.isNotBlank() }
+        logInterpreterInfo("MODEL2", model2Interpreter, model2Labels)
     }
 
     private fun loadModelMapped(name: String): MappedByteBuffer {
@@ -494,7 +492,12 @@ class ScannerActivity : AppCompatActivity() {
         speakTextTl = null
 
         cameraExecutor.execute {
-            val prediction = classifyBitmap(bitmap)
+            val prediction = try {
+                classifyBitmap(bitmap)
+            } catch (e: Exception) {
+                Log.e("RECYC_LENS_ML", "Classification crashed", e)
+                null
+            }
             runOnUiThread {
                 if (prediction == null) {
                     showUnknown()
@@ -507,38 +510,331 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun classifyBitmap(bitmap: Bitmap): PredictedItem? {
         val pred2 = classifyWithModel(bitmap, model2Interpreter, model2Labels)
-        val validPred2 = pred2?.takeIf { it.bestScore >= THRESHOLD }
-        val res2 = validPred2?.let { chooseFinalLabel(it) }
-
-        val predExtra = classifyWithModel(bitmap, extraInterpreter, extraLabels)
-        val validExtra = predExtra?.takeIf { it.bestScore >= THRESHOLD }
-        val resExtra = validExtra?.let { chooseFinalLabelSimple(it) }
+        val res2 = pred2?.let { chooseFinalLabel(it) }
 
         if (pred2 != null) {
             Log.d(
                 "RECYC_LENS_ML",
-                "model2 top1=${pred2.bestLabel} ${pred2.bestScore}, top2=${pred2.secondLabel ?: "-"} ${pred2.secondScore ?: 0f}, pass=${validPred2 != null}"
-            )
-        }
-        if (predExtra != null) {
-            Log.d(
-                "RECYC_LENS_ML",
-                "model top1=${predExtra.bestLabel} ${predExtra.bestScore}, top2=${predExtra.secondLabel ?: "-"} ${predExtra.secondScore ?: 0f}, pass=${validExtra != null}"
+                "model2 top1=${pred2.bestLabel} ${pred2.bestScore}, top2=${pred2.secondLabel ?: "-"} ${pred2.secondScore ?: 0f}"
             )
         }
 
-        var bestPair: Pair<String, Float>? = null
-        if (res2 != null) bestPair = res2
-        if (resExtra != null && (bestPair == null || resExtra.second > bestPair!!.second)) {
-            bestPair = resExtra
-        }
-
-        val chosen = bestPair ?: run {
-            Log.d("RECYC_LENS_ML", "Rejected both models below threshold")
-            return null
+        val chosen = when {
+            res2 != null -> res2
+            else -> {
+                Log.d("RECYC_LENS_ML", "No prediction returned by MODEL2")
+                return null
+            }
         }
         Log.d("RECYC_LENS_ML", "Chosen label=${chosen.first} score=${chosen.second}")
         return PredictedItem(chosen.first, chosen.second)
+    }
+
+    private fun logInterpreterInfo(tagName: String, interpreter: Interpreter, labels: List<String>) {
+        try {
+            val inTensor = interpreter.getInputTensor(0)
+            Log.d(
+                "RECYC_LENS_ML",
+                "$tagName input: shape=${inTensor.shape().joinToString(prefix = "[", postfix = "]")}, type=${inTensor.dataType()}, qScale=${inTensor.quantizationParams().scale}, qZero=${inTensor.quantizationParams().zeroPoint}"
+            )
+            for (i in 0 until interpreter.outputTensorCount) {
+                val out = interpreter.getOutputTensor(i)
+                Log.d(
+                    "RECYC_LENS_ML",
+                    "$tagName output[$i]: shape=${out.shape().joinToString(prefix = "[", postfix = "]")}, type=${out.dataType()}, qScale=${out.quantizationParams().scale}, qZero=${out.quantizationParams().zeroPoint}"
+                )
+            }
+            Log.d("RECYC_LENS_ML", "$tagName labels count=${labels.size}, labels=${labels.joinToString()}")
+        } catch (e: Exception) {
+            Log.e("RECYC_LENS_ML", "Failed to log interpreter info for $tagName", e)
+        }
+    }
+
+    private fun detectWithModel(
+        bitmap: Bitmap,
+        interpreter: Interpreter,
+        labels: List<String>
+    ): Top2Prediction? {
+        if (labels.isEmpty()) return null
+
+        val square = cropCenterSquare(bitmap)
+        val inputTensor = interpreter.getInputTensor(0)
+        val inputShape = inputTensor.shape()
+        val inH = inputShape.getOrNull(1) ?: INPUT_SIZE
+        val inW = inputShape.getOrNull(2) ?: INPUT_SIZE
+        val channels = inputShape.getOrNull(3) ?: 3
+        if (channels != 3) return null
+
+        val modelInput = Bitmap.createScaledBitmap(square, inW, inH, true)
+        val inputType = inputTensor.dataType().toString()
+        val bytesPerChannel = if (inputType == "FLOAT32") 4 else 1
+        val inputBuffer = ByteBuffer.allocateDirect(inH * inW * 3 * bytesPerChannel)
+            .order(ByteOrder.nativeOrder())
+        val inputQ = inputTensor.quantizationParams()
+        val inScale = if (inputQ.scale == 0f) 1f else inputQ.scale
+        val inZero = inputQ.zeroPoint
+
+        for (y in 0 until inH) {
+            for (x in 0 until inW) {
+                val px = modelInput.getPixel(x, y)
+                val r = Color.red(px) / 255f
+                val g = Color.green(px) / 255f
+                val b = Color.blue(px) / 255f
+                if (inputType == "FLOAT32") {
+                    inputBuffer.putFloat(r)
+                    inputBuffer.putFloat(g)
+                    inputBuffer.putFloat(b)
+                } else {
+                    val qr = (r / inScale + inZero).roundToInt()
+                    val qg = (g / inScale + inZero).roundToInt()
+                    val qb = (b / inScale + inZero).roundToInt()
+                    if (inputType == "INT8") {
+                        inputBuffer.put(qr.coerceIn(-128, 127).toByte())
+                        inputBuffer.put(qg.coerceIn(-128, 127).toByte())
+                        inputBuffer.put(qb.coerceIn(-128, 127).toByte())
+                    } else {
+                        inputBuffer.put(qr.coerceIn(0, 255).toByte())
+                        inputBuffer.put(qg.coerceIn(0, 255).toByte())
+                        inputBuffer.put(qb.coerceIn(0, 255).toByte())
+                    }
+                }
+            }
+        }
+        inputBuffer.rewind()
+
+        val outputs = HashMap<Int, Any>()
+        val outputBuffers = HashMap<Int, ByteBuffer>()
+        for (i in 0 until interpreter.outputTensorCount) {
+            val tensor = interpreter.getOutputTensor(i)
+            val count = numElements(tensor.shape())
+            val bytesPerElement = when (tensor.dataType().toString()) {
+                "FLOAT32", "INT32" -> 4
+                "INT64" -> 8
+                else -> 1
+            }
+            val buffer = ByteBuffer.allocateDirect(count * bytesPerElement)
+                .order(ByteOrder.nativeOrder())
+            outputs[i] = buffer
+            outputBuffers[i] = buffer
+        }
+
+        interpreter.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputs)
+
+        val outValues = HashMap<Int, FloatArray>()
+        for (i in 0 until interpreter.outputTensorCount) {
+            val tensor = interpreter.getOutputTensor(i)
+            val buffer = outputBuffers[i] ?: continue
+            outValues[i] = dequantizeTensorToFloatArray(buffer, tensor)
+            Log.d(
+                "RECYC_LENS_ML",
+                "detect output[$i] shape=${tensor.shape().joinToString(prefix = "[", postfix = "]")} type=${tensor.dataType()}"
+            )
+            val arr = outValues[i] ?: FloatArray(0)
+            val sample = arr.take(12).joinToString { String.format("%.4f", it) }
+            Log.d("RECYC_LENS_ML", "detect output[$i] sample(first ${minOf(12, arr.size)}): $sample")
+        }
+
+        parseBoxesClassesScores(interpreter, outValues, labels)?.let { return it }
+        parseYoloLikeSingleOutput(interpreter, outValues, labels)?.let { return it }
+
+        Log.w("RECYC_LENS_ML", "Detector output format not recognized")
+        return null
+    }
+
+    private fun parseBoxesClassesScores(
+        interpreter: Interpreter,
+        outValues: Map<Int, FloatArray>,
+        labels: List<String>
+    ): Top2Prediction? {
+        var boxesIdx: Int? = null
+        var classesIdx: Int? = null
+        var scoresIdx: Int? = null
+
+        for (i in 0 until interpreter.outputTensorCount) {
+            val shape = interpreter.getOutputTensor(i).shape()
+            if (shape.size == 3 && shape.getOrNull(2) == 4) boxesIdx = i
+            if (shape.size >= 2 && (shape.lastOrNull() == 1 || shape.size == 2)) {
+                if (classesIdx == null) classesIdx = i else if (scoresIdx == null) scoresIdx = i
+            }
+        }
+
+        if (boxesIdx == null || classesIdx == null || scoresIdx == null) return null
+
+        val boxesShape = interpreter.getOutputTensor(boxesIdx).shape()
+        val n = boxesShape.getOrNull(1) ?: return null
+        val classArr = outValues[classesIdx] ?: return null
+        val scoreArr = outValues[scoresIdx] ?: return null
+
+        var bestLabel = ""
+        var bestScore = Float.NEGATIVE_INFINITY
+        var secondLabel: String? = null
+        var secondScore = Float.NEGATIVE_INFINITY
+
+        for (i in 0 until n) {
+            val score = scoreArr.getOrElse(i) { Float.NEGATIVE_INFINITY }
+            val cls = classArr.getOrElse(i) { -1f }.roundToInt()
+            if (cls !in labels.indices) continue
+            val label = labels[cls]
+
+            if (score > bestScore) {
+                secondScore = bestScore
+                secondLabel = bestLabel.takeIf { it.isNotBlank() }
+                bestScore = score
+                bestLabel = label
+            } else if (score > secondScore) {
+                secondScore = score
+                secondLabel = label
+            }
+        }
+
+        if (bestLabel.isBlank()) return null
+        return Top2Prediction(
+            bestLabel = bestLabel,
+            bestScore = bestScore,
+            secondLabel = secondLabel,
+            secondScore = secondScore.takeIf { it != Float.NEGATIVE_INFINITY }
+        )
+    }
+
+    private fun parseYoloLikeSingleOutput(
+        interpreter: Interpreter,
+        outValues: Map<Int, FloatArray>,
+        labels: List<String>
+    ): Top2Prediction? {
+        var chosenIdx = -1
+        var attrs = -1
+        var candidates = -1
+        var channelFirst = false
+
+        for (i in 0 until interpreter.outputTensorCount) {
+            val shape = interpreter.getOutputTensor(i).shape()
+            if (shape.size != 3) continue
+            val a = shape[1]
+            val b = shape[2]
+
+            if (a >= labels.size + 4 && b > 10) {
+                chosenIdx = i
+                attrs = a
+                candidates = b
+                channelFirst = true
+                break
+            }
+            if (b >= labels.size + 4 && a > 10) {
+                chosenIdx = i
+                attrs = b
+                candidates = a
+                channelFirst = false
+                break
+            }
+        }
+
+        if (chosenIdx < 0 || attrs <= 0 || candidates <= 0) return null
+        val data = outValues[chosenIdx] ?: return null
+
+        val classStart = if (attrs >= labels.size + 5) 5 else 4
+        if (attrs <= classStart) return null
+        val classCount = minOf(labels.size, attrs - classStart)
+        if (classCount <= 0) return null
+
+        fun valueAt(candidate: Int, attr: Int): Float {
+            return if (channelFirst) {
+                data[attr * candidates + candidate]
+            } else {
+                data[candidate * attrs + attr]
+            }
+        }
+
+        var bestLabel = ""
+        var bestScore = Float.NEGATIVE_INFINITY
+        var secondLabel: String? = null
+        var secondScore = Float.NEGATIVE_INFINITY
+
+        for (c in 0 until candidates) {
+            val obj = if (classStart == 5) valueAt(c, 4).coerceAtLeast(0f) else 1f
+            var localBestCls = 0
+            var localBestScore = Float.NEGATIVE_INFINITY
+            for (k in 0 until classCount) {
+                val s = valueAt(c, classStart + k)
+                if (s > localBestScore) {
+                    localBestScore = s
+                    localBestCls = k
+                }
+            }
+
+            val finalScore = if (classStart == 5) obj * localBestScore else localBestScore
+            val label = labels[localBestCls]
+
+            if (finalScore > bestScore) {
+                secondScore = bestScore
+                secondLabel = bestLabel.takeIf { it.isNotBlank() }
+                bestScore = finalScore
+                bestLabel = label
+            } else if (finalScore > secondScore) {
+                secondScore = finalScore
+                secondLabel = label
+            }
+        }
+
+        if (bestLabel.isBlank()) return null
+        return Top2Prediction(
+            bestLabel = bestLabel,
+            bestScore = bestScore,
+            secondLabel = secondLabel,
+            secondScore = secondScore.takeIf { it != Float.NEGATIVE_INFINITY }
+        )
+    }
+
+    private fun numElements(shape: IntArray): Int {
+        if (shape.isEmpty()) return 0
+        var n = 1
+        for (d in shape) n *= d.coerceAtLeast(1)
+        return n
+    }
+
+    private fun dequantizeTensorToFloatArray(buffer: ByteBuffer, tensor: org.tensorflow.lite.Tensor): FloatArray {
+        val count = numElements(tensor.shape())
+        val result = FloatArray(count)
+        val dtype = tensor.dataType().toString()
+        val q = tensor.quantizationParams()
+        val scale = if (q.scale == 0f) 1f else q.scale
+        val zero = q.zeroPoint
+
+        buffer.rewind()
+        when (dtype) {
+            "FLOAT32" -> {
+                for (i in 0 until count) result[i] = buffer.float
+            }
+            "INT8" -> {
+                for (i in 0 until count) {
+                    val v = buffer.get().toInt()
+                    result[i] = (v - zero) * scale
+                }
+            }
+            "UINT8" -> {
+                for (i in 0 until count) {
+                    val v = buffer.get().toInt() and 0xFF
+                    result[i] = (v - zero) * scale
+                }
+            }
+            "INT32" -> {
+                for (i in 0 until count) {
+                    val v = buffer.int
+                    result[i] = (v - zero) * scale
+                }
+            }
+            "INT64" -> {
+                for (i in 0 until count) {
+                    result[i] = buffer.long.toFloat()
+                }
+            }
+            else -> {
+                for (i in 0 until count) {
+                    val v = buffer.get().toInt() and 0xFF
+                    result[i] = (v - zero) * scale
+                }
+            }
+        }
+        return result
     }
 
     private fun showUnknown() {
@@ -837,19 +1133,95 @@ class ScannerActivity : AppCompatActivity() {
         val resized = Bitmap.createScaledBitmap(square, INPUT_SIZE, INPUT_SIZE, true)
         Log.d("RECYC_LENS_ML", "Input to model: ${resized.width}x${resized.height}, original: ${bitmap.width}x${bitmap.height}")
 
-        val input = Array(1) { Array(INPUT_SIZE) { Array(INPUT_SIZE) { FloatArray(3) } } }
-        for (y in 0 until INPUT_SIZE) {
-            for (x in 0 until INPUT_SIZE) {
-                val px = resized.getPixel(x, y)
-                input[0][y][x][0] = Color.red(px) / 255f
-                input[0][y][x][1] = Color.green(px) / 255f
-                input[0][y][x][2] = Color.blue(px) / 255f
-            }
+        val inputTensor = interpreter.getInputTensor(0)
+        val outputTensor = interpreter.getOutputTensor(0)
+        val inputShape = inputTensor.shape()
+        val inH = inputShape.getOrNull(1) ?: INPUT_SIZE
+        val inW = inputShape.getOrNull(2) ?: INPUT_SIZE
+        val channels = inputShape.getOrNull(3) ?: 3
+        if (channels != 3) {
+            Log.e("RECYC_LENS_ML", "Unsupported channel count: $channels")
+            return null
         }
 
-        val output = Array(1) { FloatArray(labels.size) }
-        interpreter.run(input, output)
-        val scores = output[0]
+        val modelInput = if (inH == INPUT_SIZE && inW == INPUT_SIZE) {
+            resized
+        } else {
+            Bitmap.createScaledBitmap(square, inW, inH, true)
+        }
+
+        val outputSize = outputTensor.shape().lastOrNull() ?: labels.size
+        if (outputSize <= 0) return null
+
+        val scores: FloatArray
+
+        if (inputTensor.dataType().toString() == "FLOAT32") {
+            val input = Array(1) { Array(inH) { Array(inW) { FloatArray(3) } } }
+            for (y in 0 until inH) {
+                for (x in 0 until inW) {
+                    val px = modelInput.getPixel(x, y)
+                    input[0][y][x][0] = Color.red(px) / 255f
+                    input[0][y][x][1] = Color.green(px) / 255f
+                    input[0][y][x][2] = Color.blue(px) / 255f
+                }
+            }
+
+            val output = Array(1) { FloatArray(outputSize) }
+            interpreter.run(input, output)
+            scores = output[0]
+            Log.d(
+                "RECYC_LENS_ML",
+                "classify output raw sample(first ${minOf(12, scores.size)}): ${scores.take(12).joinToString { String.format("%.4f", it) }}"
+            )
+        } else {
+            val inputQ = inputTensor.quantizationParams()
+            val inputScale = if (inputQ.scale == 0f) 1f else inputQ.scale
+            val inputZeroPoint = inputQ.zeroPoint
+            val isInputInt8 = inputTensor.dataType().toString() == "INT8"
+
+            val inputBuffer = ByteBuffer.allocateDirect(inH * inW * 3).order(ByteOrder.nativeOrder())
+            for (y in 0 until inH) {
+                for (x in 0 until inW) {
+                    val px = modelInput.getPixel(x, y)
+                    val r = Color.red(px) / 255f
+                    val g = Color.green(px) / 255f
+                    val b = Color.blue(px) / 255f
+
+                    val qr = (r / inputScale + inputZeroPoint).roundToInt()
+                    val qg = (g / inputScale + inputZeroPoint).roundToInt()
+                    val qb = (b / inputScale + inputZeroPoint).roundToInt()
+
+                    if (isInputInt8) {
+                        inputBuffer.put(qr.coerceIn(-128, 127).toByte())
+                        inputBuffer.put(qg.coerceIn(-128, 127).toByte())
+                        inputBuffer.put(qb.coerceIn(-128, 127).toByte())
+                    } else {
+                        inputBuffer.put(qr.coerceIn(0, 255).toByte())
+                        inputBuffer.put(qg.coerceIn(0, 255).toByte())
+                        inputBuffer.put(qb.coerceIn(0, 255).toByte())
+                    }
+                }
+            }
+            inputBuffer.rewind()
+
+            val isOutputInt8 = outputTensor.dataType().toString() == "INT8"
+            val outputQ = outputTensor.quantizationParams()
+            val outputScale = if (outputQ.scale == 0f) 1f else outputQ.scale
+            val outputZeroPoint = outputQ.zeroPoint
+
+            val rawOutput = ByteArray(outputSize)
+            interpreter.run(inputBuffer, rawOutput)
+            scores = FloatArray(outputSize)
+            for (i in 0 until outputSize) {
+                val qVal = if (isOutputInt8) rawOutput[i].toInt() else rawOutput[i].toInt() and 0xFF
+                scores[i] = (qVal - outputZeroPoint) * outputScale
+            }
+            Log.d(
+                "RECYC_LENS_ML",
+                "classify output dequant sample(first ${minOf(12, scores.size)}): ${scores.take(12).joinToString { String.format("%.4f", it) }}"
+            )
+        }
+
         if (scores.isEmpty()) return null
 
         var bestIdx = 0

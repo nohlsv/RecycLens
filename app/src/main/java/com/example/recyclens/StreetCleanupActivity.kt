@@ -26,6 +26,8 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
+    @Volatile
+    private var isActivityInForeground = false
 
     private lateinit var rootLayout: ViewGroup
     private var floodView: View? = null
@@ -46,6 +48,11 @@ class StreetCleanupActivity : AppCompatActivity() {
     private var secondsLeft = 0
     private var correctCount = 0
     private var wrongCount = 0
+    private var roundStartTriggered = false
+
+    private val startRoundFallback = Runnable {
+        beginRoundIfNeeded()
+    }
 
     private val dbName = "recyclensdb.db"
 
@@ -102,19 +109,20 @@ class StreetCleanupActivity : AppCompatActivity() {
                     }
                     override fun onDone(utteranceId: String?) {
                         runOnUiThread {
+                            if (!isActivityInForeground || isFinishing || isDestroyed) return@runOnUiThread
                             MusicManager.start(this@StreetCleanupActivity, "street_cleanup_music")
                             if (utteranceId == "STREET_START_GAME") {
-                                gameArea.post {
-                                    createFeedbackCircle()
-                                    populateTrash()
-                                    startTimer()
-                                }
+                                beginRoundIfNeeded()
                             }
                         }
                     }
                     override fun onError(utteranceId: String?) {
                         runOnUiThread {
+                            if (!isActivityInForeground || isFinishing || isDestroyed) return@runOnUiThread
                             MusicManager.start(this@StreetCleanupActivity, "street_cleanup_music")
+                            if (utteranceId == "STREET_START_GAME") {
+                                beginRoundIfNeeded()
+                            }
                         }
                     }
                 })
@@ -168,17 +176,21 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isActivityInForeground = true
         MusicManager.start(this, "street_cleanup_music")
     }
 
     override fun onPause() {
+        isActivityInForeground = false
         super.onPause()
+        gameArea.removeCallbacks(startRoundFallback)
         MusicManager.pause()
         stopTts()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        gameArea.removeCallbacks(startRoundFallback)
         stopTts()
         tts?.shutdown()
         tts = null
@@ -303,6 +315,8 @@ class StreetCleanupActivity : AppCompatActivity() {
     private fun startNewGame() {
         timer?.cancel()
         timer = null
+        gameArea.removeCallbacks(startRoundFallback)
+        roundStartTriggered = false
         gameArea.removeAllViews()
         gameArea.addView(tvTimer)
         tvTimer.text = "Time: 00"
@@ -317,7 +331,24 @@ class StreetCleanupActivity : AppCompatActivity() {
         btnStart.text = "Time running..."
 
         val intro = "Street cleanup game started. Drag each trash item into the correct bin. Biodegradable trash goes into the green bin, and non biodegradable trash goes into the blue bin. Clean the street before the time runs out."
-        speak(intro, "STREET_START_GAME")
+        if (ttsReady) {
+            speak(intro, "STREET_START_GAME")
+            gameArea.postDelayed(startRoundFallback, 7000L)
+        } else {
+            beginRoundIfNeeded()
+        }
+    }
+
+    private fun beginRoundIfNeeded() {
+        if (roundStartTriggered) return
+        if (!isActivityInForeground || isFinishing || isDestroyed) return
+        roundStartTriggered = true
+        gameArea.removeCallbacks(startRoundFallback)
+        gameArea.post {
+            createFeedbackCircle()
+            populateTrash()
+            startTimer()
+        }
     }
 
     private fun createFeedbackCircle() {
@@ -411,6 +442,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
         totalSeconds = seconds
         secondsLeft = seconds
+        tvTimer.text = String.format("Time: %02d", seconds)
         timer = object : CountDownTimer(seconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 val s = (millisUntilFinished / 1000).toInt()
@@ -435,18 +467,28 @@ class StreetCleanupActivity : AppCompatActivity() {
         var dY = 0f
         var startX = 0f
         var startY = 0f
+        val gameAreaLocation = IntArray(2)
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    gameArea.getLocationOnScreen(gameAreaLocation)
+                    val touchX = event.rawX - gameAreaLocation[0]
+                    val touchY = event.rawY - gameAreaLocation[1]
                     startX = v.x
                     startY = v.y
-                    dX = v.x - event.rawX
-                    dY = v.y - event.rawY
+                    dX = v.x - touchX
+                    dY = v.y - touchY
+                    v.bringToFront()
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    v.x = event.rawX + dX
-                    v.y = event.rawY + dY
+                    val touchX = event.rawX - gameAreaLocation[0]
+                    val touchY = event.rawY - gameAreaLocation[1]
+                    val maxX = (gameArea.width - v.width).toFloat().coerceAtLeast(0f)
+                    val bottomOverflow = dp(180).toFloat()
+                    val maxY = (gameArea.height + bottomOverflow - v.height).coerceAtLeast(0f)
+                    v.x = (touchX + dX).coerceIn(0f, maxX)
+                    v.y = (touchY + dY).coerceIn(0f, maxY)
                     true
                 }
                 MotionEvent.ACTION_UP -> {

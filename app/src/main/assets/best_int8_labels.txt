@@ -1,0 +1,4 @@
+pet-bottle
+plastic-cup
+plastic-wrapper
+styrofoam

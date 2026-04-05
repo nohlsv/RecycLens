@@ -1,5 +1,11 @@
 <resources>
     <!-- Use a View theme that exists (from material:1.12.0) -->
+    <style name="RoundedCorners">
+        <!-- For rounded corners, use a specific DP (e.g., 24dp) -->
+        <!-- For a perfect circle, use 50% -->
+        <item name="cornerSize">24dp</item>
+    </style>
+
     <style name="Theme.RecycLens" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/greenDark</item>
         <item name="colorSecondary">@color/greenLight</item>
@@ -8,9 +14,20 @@
         <!-- System bars -->
         <item name="android:statusBarColor">@color/greenDark</item>
         <item name="android:navigationBarColor">@color/greenDark</item>
-
+        <item name="android:fontFamily">@font/rodin_bokutoh</item>
         <!-- IMPORTANT: remove this until you actually add the font file
         <item name="fontFamily">@font/poppins</item>
         -->
+        <!-- This rounds Buttons and Chips -->
+        <item name="shapeAppearanceSmallComponent">@style/MyRoundedShape</item>
+        <!-- This rounds Cards and Menus -->
+        <item name="shapeAppearanceMediumComponent">@style/MyRoundedShape</item>
+        <!-- This rounds Dialogs and Bottom Sheets -->
+        <item name="shapeAppearanceLargeComponent">@style/MyRoundedShape</item>
     </style>
+
+    <style name="MyRoundedShape">
+        <item name="cornerSize">24dp</item>
+    </style>
+
 </resources>

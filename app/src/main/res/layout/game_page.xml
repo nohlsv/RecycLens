@@ -37,33 +37,33 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="14dp"
                 android:clickable="false"
-                android:focusable="false">
+                android:focusable="false"
+                android:orientation="horizontal"
+                android:padding="14dp">
 
-                <ImageView
-                    android:layout_width="128dp"
-                    android:layout_height="92dp"
-                    android:src="@drawable/trash_sorting_game_icon"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="@string/app_name"
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:layout_width="158dp"
+                    android:layout_height="123dp"
                     android:clickable="false"
-                    android:focusable="false" />
-
+                    android:contentDescription="@string/app_name"
+                    android:focusable="false"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/trash_sorting_game_icon"
+                    app:shapeAppearanceOverlay="@style/RoundedCorners"
+                    />
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="16dp"
-                    android:text="Trash\nSorting\nGame"
-                    android:textSize="22sp"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="#214E2E"
-                    android:fontFamily="@font/fredoka_semibold"
+                    android:layout_weight="1"
                     android:clickable="false"
-                    android:focusable="false" />
+                    android:focusable="false"
+                    android:lineSpacingExtra="2dp"
+                    android:text="Trash Sorting Game"
+                    android:textColor="#214E2E"
+                    android:textSize="34sp" />
             </LinearLayout>
         </FrameLayout>
 
@@ -86,29 +86,29 @@
                 android:padding="14dp"
                 android:clickable="false"
                 android:focusable="false">
-
-                <ImageView
-                    android:layout_width="128dp"
-                    android:layout_height="92dp"
-                    android:src="@drawable/street_cleanup_game_icon"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="@string/app_name"
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:layout_width="158dp"
+                    android:layout_height="123dp"
                     android:clickable="false"
-                    android:focusable="false" />
+                    android:contentDescription="@string/app_name"
+                    android:focusable="false"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/street_cleanup_game_icon"
+                    app:shapeAppearanceOverlay="@style/RoundedCorners"
+                    />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="16dp"
-                    android:text="Street\nCleanup\nGame"
-                    android:textSize="22sp"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="#214E2E"
-                    android:fontFamily="@font/fredoka_semibold"
+                    android:layout_weight="1"
                     android:clickable="false"
-                    android:focusable="false" />
+                    android:focusable="false"
+                    android:lineSpacingExtra="2dp"
+                    android:text="Street Cleanup Game"
+                    android:textColor="#214E2E"
+                    android:textSize="34sp" />
             </LinearLayout>
         </FrameLayout>
 

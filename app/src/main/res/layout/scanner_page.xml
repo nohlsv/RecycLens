@@ -29,21 +29,23 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:implementationMode="performance"
-            app:scaleType="fillCenter" />
+            app:scaleType="fillCenter" >
 
-        <TextView
-            android:id="@+id/titleBar"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_gravity="bottom"
-            android:layout_margin="10dp"
-            android:background="@drawable/label_bar_bg"
-            android:gravity="center"
-            android:text="@string/info_title"
-            android:textColor="@color/blueTitle"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.01" />
+            <TextView
+                android:id="@+id/titleBar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_gravity="bottom"
+                android:layout_margin="10dp"
+                android:background="@drawable/label_bar_bg"
+                android:gravity="center"
+                android:letterSpacing="0.01"
+                android:text="@string/info_title"
+                android:textColor="@color/blueTitle"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+        </androidx.camera.view.PreviewView>
+
     </FrameLayout>
 
     <LinearLayout
