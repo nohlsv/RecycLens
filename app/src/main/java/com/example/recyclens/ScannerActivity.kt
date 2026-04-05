@@ -23,7 +23,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -96,6 +95,7 @@ class ScannerActivity : AppCompatActivity() {
     private var speakTextEn: String? = null
     private var speakTextTl: String? = null
     private var wasMusicPlayingBeforeTts: Boolean = false
+    private lateinit var feedbackBanner: RecyclensFeedbackBanner
 
     companion object {
         private const val MODEL2 = "best_float32.tflite"
@@ -118,7 +118,7 @@ class ScannerActivity : AppCompatActivity() {
                     "Camera permission is required to scan items" 
                 else 
                     "Kailangan ng camera permission para mag-scan"
-                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
             }
         }
 
@@ -134,13 +134,14 @@ class ScannerActivity : AppCompatActivity() {
                 classifyAndFetch(bmp)
             } else {
                 val msg = if (isEnglish) "Could not open image" else "Hindi mabuksan ang larawan"
-                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.scanner_page)
+        feedbackBanner = RecyclensFeedbackBanner(this)
 
         mediaPlayer = MediaPlayer.create(this, R.raw.recyclens_browsing_music)
         mediaPlayer?.isLooping = true
@@ -224,6 +225,7 @@ class ScannerActivity : AppCompatActivity() {
         tts?.stop()
         tts?.shutdown()
         tts = null
+        feedbackBanner.release()
     }
 
     private fun setupButtons() {
@@ -240,19 +242,17 @@ class ScannerActivity : AppCompatActivity() {
         btnSpeaker.setOnClickListener {
             val text = if (isEnglish) speakTextEn else speakTextTl
             if (!ttsReady || tts == null) {
-                Toast.makeText(
-                    this,
+                feedbackBanner.show(
                     if (isEnglish) "Voice guide is not ready yet." else "Hindi pa handa ang voice guide.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                    RecyclensFeedbackBanner.Style.INFO
+                )
                 return@setOnClickListener
             }
             if (text.isNullOrBlank()) {
-                Toast.makeText(
-                    this,
+                feedbackBanner.show(
                     if (isEnglish) "Scan a trash item first." else "Mag-scan muna ng basura.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                    RecyclensFeedbackBanner.Style.WARNING
+                )
                 return@setOnClickListener
             }
 
@@ -366,14 +366,14 @@ class ScannerActivity : AppCompatActivity() {
         val capture = imageCapture
         if (capture == null) {
             titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-            Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show()
+            feedbackBanner.show("Camera not ready", RecyclensFeedbackBanner.Style.ERROR)
             return
         }
         val photoFile = try {
             File.createTempFile("recyclens_capture_", ".jpg", cacheDir)
         } catch (e: Exception) {
             Log.e("RECYC_LENS_ML", "Failed to create temp file for capture", e)
-            Toast.makeText(this, "Unable to capture picture", Toast.LENGTH_SHORT).show()
+            feedbackBanner.show("Unable to capture picture", RecyclensFeedbackBanner.Style.ERROR)
             return
         }
 
@@ -389,7 +389,7 @@ class ScannerActivity : AppCompatActivity() {
                             runOnUiThread {
                                 titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
                                 val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
-                                Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
+                                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                             }
                             return
                         }
@@ -403,7 +403,7 @@ class ScannerActivity : AppCompatActivity() {
                         runOnUiThread {
                             titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
                             val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
-                            Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
+                            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                         }
                     } finally {
                         try {
@@ -418,7 +418,7 @@ class ScannerActivity : AppCompatActivity() {
                     runOnUiThread {
                         titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
                         val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
-                        Toast.makeText(this@ScannerActivity, msg, Toast.LENGTH_SHORT).show()
+                        feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                     }
                     try {
                         if (photoFile.exists()) photoFile.delete()
@@ -863,6 +863,10 @@ class ScannerActivity : AppCompatActivity() {
             lower.contains("mango peel") || lower.contains("mango") -> "Balat ng mangga"
             lower.contains("plastic bottle") || (lower.contains("bottle") && lower.contains("plastic")) -> "Plastic na bote"
             lower.contains("plastic cup") -> "Plastic na baso"
+            lower.contains("pet bottle") -> "PET na bote"
+            lower.contains("snack wrapper") -> "Balot ng meryenda"
+            lower.contains("stationery paper") -> "Papel pang-sulat"
+            lower.contains("tissue core") -> "Gitna ng tisyu"
             lower.contains("tissue") -> "Tisyu"
             lower.contains("grass") -> "Damo"
             lower.contains("leaf") || lower.contains("leaves") -> "Dahon"
@@ -893,6 +897,7 @@ class ScannerActivity : AppCompatActivity() {
 
         val material = lastMaterial
         val category = lastCategory
+        val displayLabel = humanReadableLabel(pred.label)
 
         val materialNameEn: String
         val materialNameTl: String
@@ -904,7 +909,7 @@ class ScannerActivity : AppCompatActivity() {
         val categoryDescTl: String
 
         if (material != null) {
-            materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: pred.label
+            materialNameEn = displayLabel
             materialNameTl =
                 material.nameTl?.takeIf { it.isNotBlank() }
                     ?: getTagalogMaterialName(materialNameEn)
@@ -923,8 +928,8 @@ class ScannerActivity : AppCompatActivity() {
             categoryDescTl =
                 category?.descriptionTl ?: if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
         } else {
-            materialNameEn = pred.label
-            materialNameTl = getTagalogMaterialName(pred.label) ?: pred.label
+            materialNameEn = displayLabel
+            materialNameTl = getTagalogMaterialName(materialNameEn) ?: materialNameEn
 
             val guessedCategoryId = mapToCategoryId(pred.label) ?: 0
             categoryId = guessedCategoryId
@@ -1005,36 +1010,47 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun mapLabelToMaterialCandidates(rawLabel: String): List<String> {
         val label = rawLabel.trim()
-        val lower = label.lowercase()
+        val lower = label.lowercase().replace("_", " ").replace("-", " ")
         val list = mutableListOf<String>()
 
         if (label.isNotEmpty()) {
             list.add(label)
             list.add(lower)
-            list.add(label.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
+            list.add(humanReadableLabel(label))
         }
 
         when (lower) {
             "snack wrapper" -> list.add("Candy Wrapper")
+            "plastic wrapper" -> list.add("Candy Wrapper")
             "leaves" -> list.add("Leaf")
             "leaf" -> list.add("Leaf")
             "bottle" -> {
                 list.add("Bottle")
                 list.add("Plastic Bottle")
             }
-            "tissue roll" -> list.add("Tissue")
-            "styrofoam tray" -> list.add("Styrofoam Box")
+            "pet bottle" -> {
+                list.add("PET Bottle")
+                list.add("Plastic Bottle")
+                list.add("Bottle")
+            }
+            "tissue core" -> {
+                list.add("Tissue Core")
+                list.add("Tissue")
+            }
+            "tissue" -> list.add("Tissue")
+            "styrofoam" -> {
+                list.add("Styrofoam Tray")
+                list.add("Styrofoam Box")
+                list.add("Styrofoam Cup")
+            }
             "apple", "mango", "banana", "orange" -> {
                 list.add("Fruit")
                 if (lower == "banana") list.add("Banana Peel")
                 if (lower == "mango") list.add("Mango Peel")
                 if (lower == "apple") list.add("Apple Core")
             }
-            "pet bottle" -> {
-                list.add("Bottle")
-                list.add("Plastic Bottle")
-            }
             "styrofoam cup" -> {
+                list.add("Styrofoam Cup")
                 list.add("Styrofoam Box")
                 list.add("Styrofoam Tray")
             }
@@ -1060,6 +1076,7 @@ class ScannerActivity : AppCompatActivity() {
             lower.contains("plastic cup") -> list.add("Plastic Cup")
             lower.contains("bottle") -> list.add("Plastic Bottle")
             lower.contains("tissue") -> {
+                list.add("Tissue Core")
                 list.add("Tissue")
                 list.add("Tissue Roll")
             }
@@ -1071,6 +1088,7 @@ class ScannerActivity : AppCompatActivity() {
 
             lower.contains("leaf") || lower.contains("leaves") -> list.add("Leaves")
             lower.contains("styro") || lower.contains("tray") -> {
+                list.add("Styrofoam Cup")
                 list.add("Styrofoam Tray")
                 list.add("Styrofoam Box")
             }
@@ -1084,10 +1102,12 @@ class ScannerActivity : AppCompatActivity() {
             }
             lower.contains("orange") -> list.add("Fruit")
             lower.contains("pet bottle") -> {
+                list.add("PET Bottle")
                 list.add("Bottle")
                 list.add("Plastic Bottle")
             }
             lower.contains("styrofoam cup") -> {
+                list.add("Styrofoam Cup")
                 list.add("Styrofoam Box")
                 list.add("Styrofoam Tray")
             }
@@ -1100,6 +1120,36 @@ class ScannerActivity : AppCompatActivity() {
         }
 
         return list.distinct()
+    }
+
+    private fun humanReadableLabel(rawLabel: String): String {
+        val normalized = rawLabel.trim().lowercase().replace("_", " ").replace("-", " ")
+
+        return when (normalized) {
+            "plastic wrapper", "wrapper" -> "Snack Wrapper"
+            "pet bottle" -> "PET Bottle"
+            "plastic cup" -> "Plastic Cup"
+            "styrofoam cup", "styrofoam tray" -> "Styrofoam Cup/Tray"
+            "tissue core" -> "Tissue Core"
+            "stationery paper", "bond paper", "intermediate pad", "construction paper", "paper" -> "Stationery Paper"
+            "leaf", "leaves" -> "Leaves"
+            "grass" -> "Grass"
+            "kangkong" -> "Kangkong Stem"
+            "eggplant" -> "Eggplant"
+            "okra" -> "Okra"
+            "ampalaya" -> "Ampalaya"
+            "apple" -> "Apple"
+            "banana" -> "Banana"
+            "orange" -> "Orange"
+            "mango" -> "Mango"
+            else -> normalized.split(Regex("\\s+")).joinToString(" ") { word ->
+                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            }
+        }
+    }
+
+    private fun humanReadableEnglishText(rawText: String): String {
+        return rawText.trim().replace("-", " ").replace(Regex("\\s+"), " ")
     }
 
     private data class PredictedItem(

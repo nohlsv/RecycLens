@@ -16,8 +16,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Locale
 
@@ -36,6 +34,8 @@ class TrashSortingActivity : AppCompatActivity() {
     private lateinit var tvScore: TextView
     private lateinit var circleRow: LinearLayout
     private val circleViews = mutableListOf<View>()
+    private lateinit var feedbackBanner: RecyclensFeedbackBanner
+    private lateinit var styledDialog: RecyclensDialog
 
     private val dbName = "recyclensdb.db"
 
@@ -62,6 +62,9 @@ class TrashSortingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.trash_sorting)
+
+        feedbackBanner = RecyclensFeedbackBanner(this)
+        styledDialog = RecyclensDialog(this)
 
         gameArea = findViewById(R.id.gameAreaTrash)
         btnStart = findViewById(R.id.btnStartTrash)
@@ -130,15 +133,17 @@ class TrashSortingActivity : AppCompatActivity() {
             val roundRunning =
                 (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
             if (roundRunning) {
-                AlertDialog.Builder(this)
-                    .setTitle("Restart level?")
-                    .setMessage("Do you want to reset the trash and your score and start again?")
-                    .setPositiveButton("Yes") { _, _ ->
+                styledDialog.show(
+                    title = "Restart level?",
+                    message = "Do you want to reset the trash and your score and start again?",
+                    positiveText = "Yes",
+                    negativeText = "No",
+                    tone = RecyclensDialog.Tone.INFO,
+                    onPositive = {
                         stopTts()
                         startNewRound()
                     }
-                    .setNegativeButton("No", null)
-                    .show()
+                )
             } else {
                 stopTts()
                 startNewRound()
@@ -168,6 +173,7 @@ class TrashSortingActivity : AppCompatActivity() {
         stopTts()
         tts?.shutdown()
         tts = null
+        feedbackBanner.release()
     }
 
     private fun speak(text: String, utteranceId: String) {
@@ -235,38 +241,41 @@ class TrashSortingActivity : AppCompatActivity() {
             "Non-biodegradable – BLUE bin"
         }
 
-        val builder = AlertDialog.Builder(this)
-            .setTitle(title)
-            .setView(createInstructionContent(page))
-
-        if (page == 1) {
-            builder.setPositiveButton("Next (Non-bio)") { dialog, _ ->
-                stopTts()
-                dialog.dismiss()
-                showInstructionDialog(2)
-            }
-            builder.setNegativeButton("Close") { dialog, _ ->
-                stopTts()
-                dialog.dismiss()
-            }
-        } else {
-            builder.setPositiveButton("Back (Bio)") { dialog, _ ->
-                stopTts()
-                dialog.dismiss()
-                showInstructionDialog(1)
-            }
-            builder.setNegativeButton("Done") { dialog, _ ->
-                stopTts()
-                dialog.dismiss()
-            }
-        }
-
-        builder.show()
-
         val text = if (page == 1) {
             "Biodegradable items, like food waste, paper and leaves, should go in the green bin so they can decompose properly."
         } else {
             "Non biodegradable items, like plastic, bottles and styrofoam, should go in the blue bin so they do not pollute the environment."
+        }
+        val content = createInstructionContent(page)
+
+        if (page == 1) {
+            styledDialog.show(
+                title = title,
+                message = text,
+                positiveText = "Next (Non-bio)",
+                negativeText = "Close",
+                tone = RecyclensDialog.Tone.INFO,
+                contentView = content,
+                onPositive = {
+                    stopTts()
+                    showInstructionDialog(2)
+                },
+                onNegative = { stopTts() }
+            )
+        } else {
+            styledDialog.show(
+                title = title,
+                message = text,
+                positiveText = "Back (Bio)",
+                negativeText = "Done",
+                tone = RecyclensDialog.Tone.INFO,
+                contentView = content,
+                onPositive = {
+                    stopTts()
+                    showInstructionDialog(1)
+                },
+                onNegative = { stopTts() }
+            )
         }
         speak(text, if (page == 1) "TRASH_INFO_1" else "TRASH_INFO_2")
     }
@@ -301,6 +310,7 @@ class TrashSortingActivity : AppCompatActivity() {
                 "Drag these to this blue bin"
             }
             textSize = 15f
+            setTextColor(Color.parseColor("#4A3B2A"))
             setPadding(dp(12), 0, 0, 0)
         }
 
@@ -315,6 +325,7 @@ class TrashSortingActivity : AppCompatActivity() {
                 "These are non-biodegradable items:"
             }
             textSize = 14f
+            setTextColor(Color.parseColor("#4A3B2A"))
         }
         layout.addView(subtitle)
 
@@ -352,6 +363,7 @@ class TrashSortingActivity : AppCompatActivity() {
             val text = TextView(this).apply {
                 this.text = label
                 textSize = 14f
+                setTextColor(Color.parseColor("#4A3B2A"))
                 setPadding(dp(12), 0, 0, 0)
             }
 
@@ -363,6 +375,7 @@ class TrashSortingActivity : AppCompatActivity() {
         val hint = TextView(this).apply {
             text = "\nDuring the game, drag each trash item into the correct bin."
             textSize = 13f
+            setTextColor(Color.parseColor("#4A3B2A"))
         }
         layout.addView(hint)
 
@@ -539,7 +552,7 @@ class TrashSortingActivity : AppCompatActivity() {
 
         if (!droppedOnGreen && !droppedOnBlue) {
             val msg = "Drop the trash inside the green or blue bin."
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.INFO)
             speak(msg, "TRASH_HINT")
             view.animate().x(startX).y(startY).setDuration(200).start()
             return
@@ -554,7 +567,7 @@ class TrashSortingActivity : AppCompatActivity() {
         if (isCorrect) {
             score++
             setCircleColor(currentIndex, Color.parseColor("#4CAF50"))
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+            feedbackBanner.show("Correct!", RecyclensFeedbackBanner.Style.SUCCESS)
         } else {
             wrongCount++
             setCircleColor(currentIndex, Color.parseColor("#EF5350"))
@@ -563,7 +576,7 @@ class TrashSortingActivity : AppCompatActivity() {
             } else {
                 "${item.label} should go in the blue bin."
             }
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.WARNING)
             speak(msg, "TRASH_FEEDBACK")
         }
 
@@ -627,19 +640,21 @@ class TrashSortingActivity : AppCompatActivity() {
         speak(speakText, "TRASH_RESULT_SUCCESS")
         btnStart.text = "Play Again"
 
-        AlertDialog.Builder(this)
-            .setTitle("Good work!")
-            .setMessage(message)
-            .setCancelable(false)
-            .setPositiveButton("Play again") { _, _ ->
+        styledDialog.show(
+            title = "Good work!",
+            message = message,
+            positiveText = "Play again",
+            negativeText = "Back",
+            tone = RecyclensDialog.Tone.SUCCESS,
+            onPositive = {
                 stopTts()
                 startNewRound()
-            }
-            .setNegativeButton("Back") { _, _ ->
+            },
+            onNegative = {
                 stopTts()
                 finish()
             }
-            .show()
+        )
     }
 
     private fun dp(value: Int): Int {

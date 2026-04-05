@@ -1,4 +1,17 @@
+ampalaya
+apple
+banana
+eggplant
+grass
+kangkong
+leaves
+mango
+okra
+orange
+paper
 pet-bottle
 plastic-cup
 plastic-wrapper
 styrofoam
+tissue
+tissue-core
