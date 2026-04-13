@@ -61,7 +61,7 @@
                     android:clickable="false"
                     android:focusable="false"
                     android:lineSpacingExtra="2dp"
-                    android:text="Trash Sorting Game"
+                    android:text="@string/game_trash_sorting"
                     android:textColor="#214E2E"
                     android:textSize="34sp" />
             </LinearLayout>
@@ -106,7 +106,7 @@
                     android:clickable="false"
                     android:focusable="false"
                     android:lineSpacingExtra="2dp"
-                    android:text="Street Cleanup Game"
+                    android:text="@string/game_street_cleanup"
                     android:textColor="#214E2E"
                     android:textSize="34sp" />
             </LinearLayout>

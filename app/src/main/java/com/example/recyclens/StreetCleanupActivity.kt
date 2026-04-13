@@ -100,7 +100,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         lpTimer.topMargin = dp(12)
         lpTimer.marginEnd = dp(12)
         gameArea.addView(tvTimer, lpTimer)
-        tvTimer.text = "Time: 00"
+        tvTimer.text = getString(R.string.label_time_zero)
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -147,24 +147,24 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         level = intent.getIntExtra("extra_level", 1)
         tvLevel.text = when (level) {
-            1 -> "Easy"
-            2 -> "Medium"
-            3 -> "Hard"
-            else -> "Easy"
+            1 -> getString(R.string.label_easy)
+            2 -> getString(R.string.label_medium)
+            3 -> getString(R.string.label_hard)
+            else -> getString(R.string.label_easy)
         }
 
         levelConfig = loadLevelConfig(level)
         allItems = loadItemsFromDb()
 
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
         btnStart.setOnClickListener {
             val gameRunning = (timer != null) || (remainingItems > 0)
             if (gameRunning) {
                 styledDialog.show(
-                    title = "Restart game?",
-                    message = "Do you want to reset the trash and the timer and start again?",
-                    positiveText = "Yes",
-                    negativeText = "No",
+                    title = getString(R.string.dialog_restart_game_title),
+                    message = getString(R.string.dialog_restart_game_message),
+                    positiveText = getString(R.string.action_yes),
+                    negativeText = getString(R.string.action_no),
                     tone = RecyclensDialog.Tone.INFO,
                     onPositive = {
                         stopTts()
@@ -262,10 +262,10 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun loadLevelConfig(level: Int): LevelConfig? {
         val levelName = when (level) {
-            1 -> "Easy"
-            2 -> "Medium"
-            3 -> "Hard"
-            else -> "Easy"
+            1 -> getString(R.string.label_easy)
+            2 -> getString(R.string.label_medium)
+            3 -> getString(R.string.label_hard)
+            else -> getString(R.string.label_easy)
         }
         var streetIcon = "street_cleanup"
         var trashCount = 0
@@ -326,7 +326,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         roundStartTriggered = false
         gameArea.removeAllViews()
         gameArea.addView(tvTimer)
-        tvTimer.text = "Time: 00"
+        tvTimer.text = getString(R.string.label_time_zero)
         remainingItems = 0
         totalItems = 0
         totalSeconds = 0
@@ -336,7 +336,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         floodView?.let { rootLayout.removeView(it) }
         floodView = null
         rootLayout.setBackgroundResource(R.drawable.trash_sorting_game_background)
-        btnStart.text = "Time running..."
+        btnStart.text = getString(R.string.status_time_running)
 
         val intro = "Street cleanup game started. Drag each trash item into the correct bin. Biodegradable trash goes into the green bin, and non biodegradable trash goes into the blue bin. Clean the street before the time runs out."
         if (ttsReady) {
@@ -433,7 +433,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             gameArea.addView(iv, lp)
             attachDragListener(iv)
         }
-        btnStart.text = "Time running..."
+        btnStart.text = getString(R.string.status_time_running)
     }
 
     private fun startTimer() {
@@ -450,19 +450,19 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
         totalSeconds = seconds
         secondsLeft = seconds
-        tvTimer.text = String.format("Time: %02d", seconds)
+        tvTimer.text = getString(R.string.time_format, seconds)
         timer = object : CountDownTimer(seconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 val s = (millisUntilFinished / 1000).toInt()
                 secondsLeft = s
-                tvTimer.text = String.format("Time: %02d", s)
+                tvTimer.text = getString(R.string.time_format, s)
             }
 
             override fun onFinish() {
                 secondsLeft = 0
                 if (remainingItems <= 0) return
-                tvTimer.text = "Time: 00"
-                btnStart.text = "Start"
+                tvTimer.text = getString(R.string.label_time_zero)
+                btnStart.text = getString(R.string.start_button)
                 showFloodAnimation {
                     showFailDialog()
                 }
@@ -520,10 +520,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         if (!droppedOnBio && !droppedOnNonBio) {
             val name = getTrashDisplayName(item)
             view.animate().x(startX).y(startY).setDuration(200).start()
-            feedbackBanner.show(
-                "Drag $name into the correct bin.",
-                RecyclensFeedbackBanner.Style.INFO
-            )
+            feedbackBanner.show(getString(R.string.street_correct_bin, name), RecyclensFeedbackBanner.Style.INFO)
             return
         }
 
@@ -539,10 +536,7 @@ class StreetCleanupActivity : AppCompatActivity() {
             wrongCount++
             val name = getTrashDisplayName(item)
             val correctBin = getCorrectBinText(item)
-            feedbackBanner.show(
-                "$name should go to the $correctBin.",
-                RecyclensFeedbackBanner.Style.WARNING
-            )
+            feedbackBanner.show(getString(R.string.street_should_go_bin, name, correctBin), RecyclensFeedbackBanner.Style.WARNING)
         }
 
         if (remainingItems <= 0) {
@@ -554,13 +548,13 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun evaluateFinalScore() {
         if (totalItems <= 0) {
-            btnStart.text = "Start"
+            btnStart.text = getString(R.string.start_button)
             showSuccessDialog()
             return
         }
 
         val accuracy = correctCount.toFloat() / totalItems.toFloat()
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
 
         if (accuracy < 0.5f) {
             showFloodAnimation {
@@ -623,10 +617,10 @@ class StreetCleanupActivity : AppCompatActivity() {
             db.insert("game_result", null, values)
 
             val levelName = when (level) {
-                1 -> "Easy"
-                2 -> "Medium"
-                3 -> "Hard"
-                else -> "Easy"
+                1 -> getString(R.string.label_easy)
+                2 -> getString(R.string.label_medium)
+                3 -> getString(R.string.label_hard)
+                else -> getString(R.string.label_easy)
             }
             val upd = ContentValues().apply {
                 put("current_score", correct)
@@ -645,13 +639,13 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun showSuccessDialog() {
         val levelName = when (level) {
-            1 -> "Easy"
-            2 -> "Medium"
-            3 -> "Hard"
-            else -> "Easy"
+            1 -> getString(R.string.label_easy)
+            2 -> getString(R.string.label_medium)
+            3 -> getString(R.string.label_hard)
+            else -> getString(R.string.label_easy)
         }
-        val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
-        val timeText = "Time left: $secondsLeft second(s)"
+        val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
+        val timeText = getString(R.string.time_left_format, secondsLeft)
 
         saveGameResultToDb(
             totalScore = correctCount,
@@ -661,13 +655,13 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val speakText = "Good work! You finished the $levelName level with $correctCount correct and $wrongCount wrong. You had $secondsLeft seconds left."
         speak(speakText, "STREET_RESULT_SUCCESS")
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
 
         styledDialog.show(
-            title = "Level complete!",
-            message = "You finished the $levelName level!\n\n$scoreText\n$timeText",
-            positiveText = "Play again",
-            negativeText = "Back",
+            title = getString(R.string.dialog_level_complete),
+            message = getString(R.string.dialog_level_complete_message_with_level, levelName, scoreText, timeText),
+            positiveText = getString(R.string.action_play_again),
+            negativeText = getString(R.string.action_back),
             tone = RecyclensDialog.Tone.SUCCESS,
             onPositive = {
                 stopTts()
@@ -681,9 +675,9 @@ class StreetCleanupActivity : AppCompatActivity() {
     }
 
     private fun showFailDialog() {
-        val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
+        val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
         val timeUsed = totalSeconds - secondsLeft
-        val timeText = "Time used: $timeUsed second(s)"
+        val timeText = getString(R.string.time_used_format, timeUsed)
 
         saveGameResultToDb(
             totalScore = correctCount,
@@ -693,13 +687,13 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val speakText = "Oh no. Time is up. You got $correctCount correct and $wrongCount wrong. Try again and clean everything before the time runs out."
         speak(speakText, "STREET_RESULT_FAIL_TIME")
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
 
         styledDialog.show(
-            title = "Oh no!",
-            message = "The drains got blocked and the street flooded because some trash was left.\n\n$scoreText\n$timeText\n\nTry again and clean everything before the time runs out!",
-            positiveText = "Try again",
-            negativeText = "Back",
+            title = getString(R.string.dialog_time_up),
+            message = getString(R.string.dialog_time_up_message, scoreText, timeText),
+            positiveText = getString(R.string.action_try_again),
+            negativeText = getString(R.string.action_back),
             tone = RecyclensDialog.Tone.ERROR,
             onPositive = {
                 stopTts()
@@ -713,7 +707,7 @@ class StreetCleanupActivity : AppCompatActivity() {
     }
 
     private fun showLowScoreDialog() {
-        val scoreText = "Correct: $correctCount  |  Wrong: $wrongCount"
+        val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
         val itemsText = "You sorted all $totalItems items."
 
         saveGameResultToDb(
@@ -724,13 +718,13 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val speakText = "You sorted all $totalItems items, but some went into the wrong bin. You got $correctCount correct and $wrongCount wrong. Try again to improve your score."
         speak(speakText, "STREET_RESULT_FAIL_LOW")
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
 
         styledDialog.show(
-            title = "Oh no!",
-            message = "Some trash went into the wrong bin, so the drains still got blocked and the street flooded.\n\n$scoreText\n$itemsText",
-            positiveText = "Try again",
-            negativeText = "Back",
+            title = getString(R.string.dialog_level_fail_title),
+            message = getString(R.string.dialog_low_score_message, scoreText, itemsText),
+            positiveText = getString(R.string.action_try_again),
+            negativeText = getString(R.string.action_back),
             tone = RecyclensDialog.Tone.WARNING,
             onPositive = {
                 stopTts()
@@ -771,14 +765,14 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun showInstructionDialog(page: Int = 1) {
         val title = if (page == 1) {
-            "Biodegradable"
+            getString(R.string.category_biodegradable)
         } else {
-            "Non-biodegradable"
+            getString(R.string.category_non_biodegradable)
         }
         val text = if (page == 1) {
-            "Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly."
+            getString(R.string.street_game_info_1)
         } else {
-            "Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains."
+            getString(R.string.street_game_info_2)
         }
 
         val content = createInstructionContent(page)
@@ -787,8 +781,8 @@ class StreetCleanupActivity : AppCompatActivity() {
             styledDialog.show(
                 title = title,
                 message = text,
-                positiveText = "Next (Non-bio)",
-                negativeText = "Close",
+                positiveText = getString(R.string.action_next_non_bio),
+                negativeText = getString(R.string.action_close),
                 tone = RecyclensDialog.Tone.INFO,
                 contentView = content,
                 onPositive = {
@@ -801,8 +795,8 @@ class StreetCleanupActivity : AppCompatActivity() {
             styledDialog.show(
                 title = title,
                 message = text,
-                positiveText = "Back (Bio)",
-                negativeText = "Done",
+                positiveText = getString(R.string.action_back_bio),
+                negativeText = getString(R.string.action_done),
                 tone = RecyclensDialog.Tone.INFO,
                 contentView = content,
                 onPositive = {
@@ -839,11 +833,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         val binLabel = TextView(this).apply {
-            text = if (page == 1) {
-                "Drop these into this green bin"
-            } else {
-                "Drop these into this blue bin"
-            }
+            text = if (page == 1) getString(R.string.street_green_bin_text) else getString(R.string.street_blue_bin_text)
             textSize = 15f
             setTextColor(Color.parseColor("#4A3B2A"))
             setPadding(dp(12), 0, 0, 0)
@@ -854,11 +844,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         layout.addView(headerRow)
 
         val subtitle = TextView(this).apply {
-            text = if (page == 1) {
-                "These items belong to the biodegradable bin:"
-            } else {
-                "These items belong to the non-biodegradable bin:"
-            }
+            text = if (page == 1) getString(R.string.street_bio_items) else getString(R.string.street_nonbio_items)
             textSize = 14f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -908,7 +894,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         val hint = TextView(this).apply {
-            text = "\nDuring the game, drag each piece of trash into the correct bin before the time runs out."
+            text = "\n${getString(R.string.street_game_intro_footer)}"
             textSize = 13f
             setTextColor(Color.parseColor("#4A3B2A"))
         }

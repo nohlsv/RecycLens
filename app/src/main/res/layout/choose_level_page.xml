@@ -18,7 +18,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Choose Your\nLevel!"
+        android:text="@string/label_choose_level"
         android:textSize="28sp"
         android:textStyle="bold"
         android:fontFamily="@font/fredoka_semibold"
@@ -65,7 +65,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Easy"
+                    android:text="@string/label_easy"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:fontFamily="@font/fredoka_semibold"
@@ -74,7 +74,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Learn and play at your own pace!"
+                    android:text="@string/desc_easy"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>
             </LinearLayout>
@@ -105,7 +105,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Medium"
+                    android:text="@string/label_medium"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:fontFamily="@font/fredoka_semibold"
@@ -114,7 +114,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sort a little faster!"
+                    android:text="@string/desc_medium"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>
             </LinearLayout>
@@ -144,7 +144,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hard"
+                    android:text="@string/label_hard"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:fontFamily="@font/fredoka_semibold"
@@ -153,7 +153,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Test what you've learned!"
+                    android:text="@string/desc_hard"
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"/>
             </LinearLayout>

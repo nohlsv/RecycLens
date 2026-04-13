@@ -128,16 +128,16 @@ class TrashSortingActivity : AppCompatActivity() {
         allItems = loadItemsFromDb()
         resetScoreAndCircles(0)
 
-        btnStart.text = "Start"
+        btnStart.text = getString(R.string.start_button)
         btnStart.setOnClickListener {
             val roundRunning =
                 (answeredCount > 0 && answeredCount < totalToSort) || currentQueue.isNotEmpty()
             if (roundRunning) {
                 styledDialog.show(
-                    title = "Restart level?",
-                    message = "Do you want to reset the trash and your score and start again?",
-                    positiveText = "Yes",
-                    negativeText = "No",
+                    title = getString(R.string.dialog_restart_game_title),
+                    message = getString(R.string.dialog_restart_game_message),
+                    positiveText = getString(R.string.action_yes),
+                    negativeText = getString(R.string.action_no),
                     tone = RecyclensDialog.Tone.INFO,
                     onPositive = {
                         stopTts()
@@ -236,15 +236,15 @@ class TrashSortingActivity : AppCompatActivity() {
 
     private fun showInstructionDialog(page: Int = 1) {
         val title = if (page == 1) {
-            "Biodegradable – GREEN bin"
+            getString(R.string.category_biodegradable) + " – GREEN bin"
         } else {
-            "Non-biodegradable – BLUE bin"
+            getString(R.string.category_non_biodegradable) + " – BLUE bin"
         }
 
         val text = if (page == 1) {
-            "Biodegradable items, like food waste, paper and leaves, should go in the green bin so they can decompose properly."
+            getString(R.string.street_game_info_1)
         } else {
-            "Non biodegradable items, like plastic, bottles and styrofoam, should go in the blue bin so they do not pollute the environment."
+            getString(R.string.street_game_info_2)
         }
         val content = createInstructionContent(page)
 
@@ -252,8 +252,8 @@ class TrashSortingActivity : AppCompatActivity() {
             styledDialog.show(
                 title = title,
                 message = text,
-                positiveText = "Next (Non-bio)",
-                negativeText = "Close",
+                positiveText = getString(R.string.action_next_non_bio),
+                negativeText = getString(R.string.action_close),
                 tone = RecyclensDialog.Tone.INFO,
                 contentView = content,
                 onPositive = {
@@ -266,8 +266,8 @@ class TrashSortingActivity : AppCompatActivity() {
             styledDialog.show(
                 title = title,
                 message = text,
-                positiveText = "Back (Bio)",
-                negativeText = "Done",
+                positiveText = getString(R.string.action_back_bio),
+                negativeText = getString(R.string.action_done),
                 tone = RecyclensDialog.Tone.INFO,
                 contentView = content,
                 onPositive = {
@@ -304,11 +304,7 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         val binLabel = TextView(this).apply {
-            text = if (page == 1) {
-                "Drag these to this green bin"
-            } else {
-                "Drag these to this blue bin"
-            }
+            text = if (page == 1) getString(R.string.street_green_bin_text) else getString(R.string.street_blue_bin_text)
             textSize = 15f
             setTextColor(Color.parseColor("#4A3B2A"))
             setPadding(dp(12), 0, 0, 0)
@@ -319,11 +315,7 @@ class TrashSortingActivity : AppCompatActivity() {
         layout.addView(headerRow)
 
         val subtitle = TextView(this).apply {
-            text = if (page == 1) {
-                "These are biodegradable items:"
-            } else {
-                "These are non-biodegradable items:"
-            }
+            text = if (page == 1) getString(R.string.street_bio_items) else getString(R.string.street_nonbio_items)
             textSize = 14f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -373,7 +365,7 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         val hint = TextView(this).apply {
-            text = "\nDuring the game, drag each trash item into the correct bin."
+            text = "\n${getString(R.string.street_game_intro_footer)}"
             textSize = 13f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -383,7 +375,7 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun startNewRound() {
-        btnStart.text = "Sorting..."
+        btnStart.text = getString(R.string.status_sorting)
         gameArea.removeCallbacks(startRoundFallback)
         roundStartTriggered = false
         gameArea.removeAllViews()
@@ -425,7 +417,7 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun resetScoreAndCircles(count: Int) {
-        tvScore.text = "Score: 0 / $count"
+        tvScore.text = getString(R.string.score_progress_format, 0, count)
         circleRow.removeAllViews()
         circleViews.clear()
 
@@ -498,7 +490,7 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun updateProgress() {
-        tvScore.text = "Score: $score / $totalToSort"
+        tvScore.text = getString(R.string.score_progress_format, score, totalToSort)
     }
 
     private fun attachDragListener(view: View) {
@@ -551,7 +543,7 @@ class TrashSortingActivity : AppCompatActivity() {
         val droppedOnBlue = blueRect.contains(dropRawX, dropRawY)
 
         if (!droppedOnGreen && !droppedOnBlue) {
-            val msg = "Drop the trash inside the green or blue bin."
+            val msg = getString(R.string.feedback_drop_bin)
             feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.INFO)
             speak(msg, "TRASH_HINT")
             view.animate().x(startX).y(startY).setDuration(200).start()
@@ -567,7 +559,7 @@ class TrashSortingActivity : AppCompatActivity() {
         if (isCorrect) {
             score++
             setCircleColor(currentIndex, Color.parseColor("#4CAF50"))
-            feedbackBanner.show("Correct!", RecyclensFeedbackBanner.Style.SUCCESS)
+            feedbackBanner.show(getString(R.string.feedback_correct), RecyclensFeedbackBanner.Style.SUCCESS)
         } else {
             wrongCount++
             setCircleColor(currentIndex, Color.parseColor("#EF5350"))
@@ -634,17 +626,17 @@ class TrashSortingActivity : AppCompatActivity() {
     }
 
     private fun showSuccessDialog() {
-        val scoreText = "Correct: $score  |  Wrong: $wrongCount"
-        val message = "You finished the level!\n$scoreText"
+        val scoreText = getString(R.string.score_result_format, score, wrongCount)
+        val message = getString(R.string.dialog_level_complete_message, scoreText)
         val speakText = "Good work! You finished the level with $score correct and $wrongCount wrong."
         speak(speakText, "TRASH_RESULT_SUCCESS")
-        btnStart.text = "Play Again"
+        btnStart.text = getString(R.string.status_play_again)
 
         styledDialog.show(
-            title = "Good work!",
+            title = getString(R.string.dialog_good_work),
             message = message,
-            positiveText = "Play again",
-            negativeText = "Back",
+            positiveText = getString(R.string.action_play_again),
+            negativeText = getString(R.string.action_back),
             tone = RecyclensDialog.Tone.SUCCESS,
             onPositive = {
                 stopTts()

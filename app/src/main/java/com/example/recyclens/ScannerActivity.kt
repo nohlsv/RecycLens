@@ -5,11 +5,13 @@ import android.content.ContentResolver
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.graphics.drawable.BitmapDrawable
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
@@ -23,8 +25,11 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
+import android.widget.ArrayAdapter
+import android.view.LayoutInflater
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -64,6 +69,7 @@ class ScannerActivity : AppCompatActivity() {
     private lateinit var infoRightIcon: ImageView
     private lateinit var btnCamera: ImageButton
     private lateinit var btnGallery: ImageButton
+    private lateinit var btnPreset: ImageButton
     private lateinit var navScan: ImageButton
     private lateinit var navPlay: ImageView
     private lateinit var langToggle: RelativeLayout
@@ -96,6 +102,26 @@ class ScannerActivity : AppCompatActivity() {
     private var speakTextTl: String? = null
     private var wasMusicPlayingBeforeTts: Boolean = false
     private lateinit var feedbackBanner: RecyclensFeedbackBanner
+
+    private data class PresetSample(
+        val label: String,
+        val drawableRes: Int,
+        val nameEn: String,
+        val nameTl: String
+    )
+
+    private val presetSamples = listOf(
+        PresetSample("banana", R.drawable.ic_trash_banana, "Banana Peel", "Balat ng saging"),
+        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Plastic Bottle", "Plastic na bote"),
+        PresetSample("apple", R.drawable.ic_trash_fruit, "Apple Core", "Ubod ng mansanas"),
+        PresetSample("grass", R.drawable.ic_trash_grass, "Grass", "Damo"),
+        PresetSample("leaves", R.drawable.ic_trash_leaf, "Leaves", "Dahon"),
+        PresetSample("paper", R.drawable.ic_trash_paper, "Stationery Paper", "Papel pang-sulat"),
+        PresetSample("plastic-cup", R.drawable.ic_trash_plastic_cup, "Plastic Cup", "Plastic na baso"),
+        PresetSample("styrofoam", R.drawable.ic_trash_styro, "Styrofoam Tray", "Styrofoam na lalagyan"),
+        PresetSample("tissue", R.drawable.ic_trash_tissue, "Tissue", "Tisyu"),
+        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Snack Wrapper", "Balot ng meryenda")
+    )
 
     companion object {
         private const val MODEL2 = "best_float32.tflite"
@@ -154,6 +180,7 @@ class ScannerActivity : AppCompatActivity() {
         infoRightIcon = findViewById(R.id.infoRightIcon)
         btnCamera = findViewById(R.id.btnCamera)
         btnGallery = findViewById(R.id.btnGallery)
+        btnPreset = findViewById(R.id.btnPreset)
         navScan = findViewById(R.id.navScan)
         navPlay = findViewById(R.id.navPlay)
         langToggle = findViewById(R.id.langToggle)
@@ -239,6 +266,8 @@ class ScannerActivity : AppCompatActivity() {
 
         btnGallery.setOnClickListener { pickImage.launch("image/*") }
 
+        btnPreset.setOnClickListener { showPresetPicker() }
+
         btnSpeaker.setOnClickListener {
             val text = if (isEnglish) speakTextEn else speakTextTl
             if (!ttsReady || tts == null) {
@@ -280,13 +309,13 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun updateLanguageTexts() {
         if (isEnglish) {
-            langText.text = "EN"
-            labelScan.text = "Scan Trash"
-            labelPlay.text = "Play Games"
+            langText.text = getString(R.string.label_en)
+            labelScan.text = getString(R.string.label_scan_trash)
+            labelPlay.text = getString(R.string.label_play_games)
         } else {
-            langText.text = "TL"
-            labelScan.text = "I-scan ang Basura"
-            labelPlay.text = "Maglaro"
+            langText.text = getString(R.string.label_tl)
+            labelScan.text = getString(R.string.scanner_i_scan_ang_basura)
+            labelPlay.text = getString(R.string.label_play_games)
         }
     }
 
@@ -362,18 +391,18 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun captureFrameFromPreview() {
-        titleBar.text = if (isEnglish) "Taking a picture..." else "Kumukuha ng larawan..."
+        titleBar.text = if (isEnglish) getString(R.string.scanner_taking_picture) else getString(R.string.scanner_kumukuha_ng_larawan)
         val capture = imageCapture
         if (capture == null) {
-            titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-            feedbackBanner.show("Camera not ready", RecyclensFeedbackBanner.Style.ERROR)
+            titleBar.text = if (isEnglish) getString(R.string.scanner_opps_try_again) else getString(R.string.scanner_ay_ulitin)
+            feedbackBanner.show(getString(R.string.scanner_camera_not_ready), RecyclensFeedbackBanner.Style.ERROR)
             return
         }
         val photoFile = try {
             File.createTempFile("recyclens_capture_", ".jpg", cacheDir)
         } catch (e: Exception) {
             Log.e("RECYC_LENS_ML", "Failed to create temp file for capture", e)
-            feedbackBanner.show("Unable to capture picture", RecyclensFeedbackBanner.Style.ERROR)
+            feedbackBanner.show(getString(R.string.scanner_unable_capture), RecyclensFeedbackBanner.Style.ERROR)
             return
         }
 
@@ -388,7 +417,7 @@ class ScannerActivity : AppCompatActivity() {
                         if (bitmap == null) {
                             runOnUiThread {
                                 titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                                val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                                val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
                                 feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                             }
                             return
@@ -402,7 +431,7 @@ class ScannerActivity : AppCompatActivity() {
                         Log.e("RECYC_LENS_ML", "Capture decode failed", e)
                         runOnUiThread {
                             titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                            val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                            val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
                             feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                         }
                     } finally {
@@ -417,7 +446,7 @@ class ScannerActivity : AppCompatActivity() {
                     Log.e("RECYC_LENS_ML", "Capture error", exception)
                     runOnUiThread {
                         titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                        val msg = if (isEnglish) "Unable to capture picture" else "Hindi makuha ang larawan"
+                        val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
                         feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
                     }
                     try {
@@ -459,6 +488,65 @@ class ScannerActivity : AppCompatActivity() {
         renderPredictionOrIdle()
     }
 
+    private fun showPresetPicker() {
+        val labels = presetSamples.map { sample ->
+            if (isEnglish) sample.nameEn else sample.nameTl
+        }
+
+        val adapter = object : ArrayAdapter<String>(
+            this,
+            R.layout.dialog_preset_sample_item,
+            labels
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val view = convertView ?: LayoutInflater.from(context)
+                    .inflate(R.layout.dialog_preset_sample_item, parent, false)
+                val icon = view.findViewById<ImageView>(R.id.presetItemIcon)
+                val label = view.findViewById<TextView>(R.id.presetItemLabel)
+                icon.setImageResource(presetSamples[position].drawableRes)
+                label.text = labels[position]
+                return view
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(if (isEnglish) getString(R.string.dialog_choose_sample_title) else getString(R.string.dialog_choose_sample_title_tl))
+            .setAdapter(adapter) { _, which ->
+                applyPresetSample(presetSamples[which])
+            }
+            .setNegativeButton(if (isEnglish) getString(R.string.action_cancel) else getString(R.string.action_cancel), null)
+            .show()
+    }
+
+    private fun applyPresetSample(sample: PresetSample) {
+        val bitmap = drawableToBitmap(sample.drawableRes)
+        if (bitmap == null) {
+            val msg = if (isEnglish) getString(R.string.scanner_load_sample_fail) else getString(R.string.scanner_load_sample_fail_tl)
+            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+            return
+        }
+
+        showCapturedPhoto(bitmap)
+        titleBar.text = if (isEnglish) getString(R.string.scanner_using_sample) else getString(R.string.scanner_gumagamit_sample)
+        lastPrediction = PredictedItem(sample.label, 1f)
+        fetchMaterialAndCategory(PredictedItem(sample.label, 1f))
+    }
+
+    private fun drawableToBitmap(drawableRes: Int): Bitmap? {
+        val drawable = ContextCompat.getDrawable(this, drawableRes) ?: return null
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
+            return drawable.bitmap
+        }
+
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else INPUT_SIZE
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else INPUT_SIZE
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
+    }
+
     private fun initModels() {
         val mapped2 = loadModelMapped(MODEL2)
         model2Interpreter = Interpreter(mapped2, Interpreter.Options())
@@ -483,10 +571,10 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun classifyAndFetch(bitmap: Bitmap) {
         titleBar.text = if (isEnglish) "Looking closely..." else "Tinitingnan ko mabuti..."
-        infoTitle.text = if (isEnglish) "Analyzing" else "Sinusuri"
+        infoTitle.text = if (isEnglish) getString(R.string.scanner_analyzing) else getString(R.string.scanner_sinusuri)
         infoText.text =
-            if (isEnglish) "I’m checking what kind of waste this is."
-            else "Tinitingnan ko kung anong uri ng basura ito."
+            if (isEnglish) getString(R.string.scanner_checking_waste)
+            else getString(R.string.scanner_checking_waste_tl)
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
         speakTextEn = null
         speakTextTl = null
@@ -846,11 +934,11 @@ class ScannerActivity : AppCompatActivity() {
         if (isEnglish) {
             titleBar.text = "I'm not sure"
             infoTitle.text = "Unknown item"
-            infoText.text = "Try another photo or choose from gallery."
+            infoText.text = "Try another photo, choose from gallery, or use a sample image."
         } else {
             titleBar.text = "Hindi ako sigurado"
             infoTitle.text = "Hindi kilala"
-            infoText.text = "Subukan ang ibang larawan o pumili sa gallery."
+            infoText.text = "Subukan ang ibang larawan, pumili sa gallery, o gumamit ng sample image."
         }
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
@@ -883,13 +971,13 @@ class ScannerActivity : AppCompatActivity() {
             speakTextEn = null
             speakTextTl = null
             if (isEnglish) {
-                titleBar.text = "Camera Ready"
-                infoTitle.text = "Scan a trash item"
-                infoText.text = "Point the camera at a waste item or pick a photo from gallery."
+                titleBar.text = getString(R.string.scanner_camera_ready)
+                infoTitle.text = getString(R.string.scanner_scan_a_trash_item)
+                infoText.text = getString(R.string.scanner_camera_ready_desc)
             } else {
-                titleBar.text = "Handa ang Camera"
-                infoTitle.text = "I-scan ang basura"
-                infoText.text = "Itutok ang camera sa basura o pumili ng larawan mula sa gallery."
+                titleBar.text = getString(R.string.scanner_handa_ang_camera)
+                infoTitle.text = getString(R.string.scanner_i_scan_ang_basura)
+                infoText.text = getString(R.string.scanner_camera_ready_desc_tl)
             }
             infoRightIcon.setImageResource(R.drawable.ic_green_bin)
             return
@@ -919,9 +1007,9 @@ class ScannerActivity : AppCompatActivity() {
             isNonBio = (categoryId == 2)
 
             categoryNameEn =
-                category?.nameEn ?: if (isNonBio) "Non-biodegradable" else "Biodegradable"
+                category?.nameEn ?: if (isNonBio) getString(R.string.category_non_biodegradable) else getString(R.string.category_biodegradable)
             categoryNameTl =
-                category?.nameTl ?: if (isNonBio) "Di-Nabubulok" else "Nabubulok"
+                category?.nameTl ?: if (isNonBio) getString(R.string.category_di_nabubulok) else getString(R.string.category_nabubulok)
 
             categoryDescEn =
                 category?.descriptionEn ?: if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
@@ -935,8 +1023,8 @@ class ScannerActivity : AppCompatActivity() {
             categoryId = guessedCategoryId
             isNonBio = (categoryId == 2)
 
-            categoryNameEn = if (isNonBio) "Non-biodegradable" else "Biodegradable"
-            categoryNameTl = if (isNonBio) "Di-Nabubulok" else "Nabubulok"
+            categoryNameEn = if (isNonBio) getString(R.string.category_non_biodegradable) else getString(R.string.category_biodegradable)
+            categoryNameTl = if (isNonBio) getString(R.string.category_di_nabubulok) else getString(R.string.category_nabubulok)
 
             categoryDescEn =
                 if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
@@ -960,17 +1048,58 @@ class ScannerActivity : AppCompatActivity() {
         }
 
         val imageName = material?.image ?: ""
-        val resId =
-            if (imageName.isNotEmpty()) resources.getIdentifier(
-                imageName,
-                "drawable",
-                packageName
-            ) else 0
+        val resId = resolveScannedObjectImageRes(
+            imageName = imageName,
+            predictedLabel = pred.label,
+            displayMaterialName = materialNameEn
+        )
 
         if (resId != 0) {
             infoRightIcon.setImageResource(resId)
         } else {
             infoRightIcon.setImageResource(binRes)
+        }
+    }
+
+    private fun resolveScannedObjectImageRes(
+        imageName: String,
+        predictedLabel: String,
+        displayMaterialName: String
+    ): Int {
+        // 1) Try DB image value directly
+        if (imageName.isNotBlank()) {
+            val direct = resources.getIdentifier(imageName, "drawable", packageName)
+            if (direct != 0) return direct
+
+            // 2) Normalize values like "ic_trash_banana.png" or "drawable/ic_trash_banana"
+            val normalized = imageName
+                .substringAfterLast('/')
+                .substringBeforeLast('.')
+                .trim()
+            if (normalized.isNotEmpty()) {
+                val normalizedRes = resources.getIdentifier(normalized, "drawable", packageName)
+                if (normalizedRes != 0) return normalizedRes
+            }
+        }
+
+        // 3) Fallback by predicted label/material name
+        val key = ("$predictedLabel $displayMaterialName")
+            .lowercase()
+            .replace("_", " ")
+            .replace("-", " ")
+
+        return when {
+            key.contains("banana") -> R.drawable.ic_trash_banana
+            key.contains("apple") || key.contains("fruit") || key.contains("orange") || key.contains("mango") -> R.drawable.ic_trash_fruit
+            key.contains("leaf") || key.contains("leaves") -> R.drawable.ic_trash_leaf
+            key.contains("grass") -> R.drawable.ic_trash_grass
+            key.contains("paper") -> R.drawable.ic_trash_paper
+            key.contains("tissue") -> R.drawable.ic_trash_tissue
+            key.contains("cup") -> R.drawable.ic_trash_plastic_cup
+            key.contains("bottle") || key.contains("pet") -> R.drawable.ic_trash_bottle
+            key.contains("wrapper") -> R.drawable.ic_trash_wrapper
+            key.contains("styro") || key.contains("foam") || key.contains("tray") -> R.drawable.ic_trash_styro
+            else -> 0
         }
     }
 

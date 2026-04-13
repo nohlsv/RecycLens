@@ -80,6 +80,20 @@
             android:src="@android:drawable/ic_menu_gallery"
             android:tint="@color/blueTitle"
             android:elevation="4dp" />
+
+        <Space
+            android:layout_width="14dp"
+            android:layout_height="0dp" />
+
+        <ImageButton
+            android:id="@+id/btnPreset"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/btn_white_square"
+            android:contentDescription="@string/cd_open_preset_samples"
+            android:src="@drawable/bxs_image"
+            android:tint="@color/blueTitle"
+            android:elevation="4dp" />
     </LinearLayout>
 
     <LinearLayout
@@ -114,14 +128,17 @@
 
             <TextView
                 android:id="@+id/infoTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/info_title"
                 android:textColor="@color/blueTitle"
-                android:textSize="18sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:singleLine="true"
-                android:maxLines="1" />
+                android:maxLines="2"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="14sp"
+                android:autoSizeMaxTextSize="26sp"
+                android:autoSizeStepGranularity="1sp" />
 
             <TextView
                 android:id="@+id/infoText"

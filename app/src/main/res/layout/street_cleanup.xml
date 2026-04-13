@@ -22,7 +22,7 @@
         android:id="@+id/titleStreet"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Street Cleanup"
+        android:text="@string/label_street_cleanup"
         android:textColor="#1E4D33"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -49,7 +49,7 @@
             android:layout_width="90dp"
             android:layout_height="90dp"
             android:layout_marginEnd="16dp"
-            android:contentDescription="Green bin - Biodegradable"
+            android:contentDescription="@string/bin_green_bio_cap"
             android:src="@drawable/green_bin" />
 
         <ImageView
@@ -57,7 +57,7 @@
             android:layout_width="90dp"
             android:layout_height="90dp"
             android:layout_marginStart="16dp"
-            android:contentDescription="Blue bin - Non-biodegradable"
+            android:contentDescription="@string/bin_blue_non_bio_cap"
             android:src="@drawable/blue_bin" />
     </LinearLayout>
 
@@ -76,7 +76,7 @@
         android:id="@+id/tvLevel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Easy"
+        android:text="@string/label_easy"
         android:textColor="#ffffff"
         android:background="@drawable/label_bar_bg"
         android:padding="8dp"
@@ -104,7 +104,7 @@
         android:id="@+id/btnStartStreet"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:text="Start Game"
+        android:text="@string/action_start_game"
         android:textStyle="bold"
         android:gravity="center"
         android:background="@drawable/yellow_button_bg"
