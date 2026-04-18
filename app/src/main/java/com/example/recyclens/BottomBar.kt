@@ -10,6 +10,9 @@ import androidx.core.app.ActivityOptionsCompat
 
 object BottomBar {
     enum class Tab { SCAN, PLAY }
+    interface LanguageAware {
+        fun onLanguageChanged()
+    }
 
     fun setup(activity: Activity, selected: Tab? = null) {
         val navScan: View? = activity.findViewById(R.id.navScan)
@@ -25,16 +28,17 @@ object BottomBar {
         fun applyLanguageUi() {
             val isEnglish = LanguagePrefs.isEnglish(activity)
             langText?.text = activity.getString(if (isEnglish) R.string.label_en else R.string.label_tl)
-            labelScan?.text = activity.getString(if (isEnglish) R.string.label_scan_trash else R.string.scanner_i_scan_ang_basura)
-            labelPlay?.text = activity.getString(R.string.label_play_games)
+            labelScan?.text = activity.getString(if (isEnglish) R.string.label_scan_trash_en else R.string.label_scan_trash_tl)
+            labelPlay?.text = activity.getString(if (isEnglish) R.string.label_play_games_en else R.string.label_play_games_tl)
         }
 
         applyLanguageUi()
 
         langToggle?.setOnClickListener {
             LanguagePrefs.toggle(activity)
+            (activity as? AppCompatActivity)?.let { LanguagePrefs.applyLocale(it) }
             applyLanguageUi()
-            activity.recreate()
+            (activity as? LanguageAware)?.onLanguageChanged()
         }
 
         navScan?.setOnClickListener {

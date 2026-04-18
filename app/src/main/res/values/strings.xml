@@ -48,7 +48,19 @@
     <string name="label_time_zero">Time: 00</string>
     <string name="label_scan_trash">Scan Trash</string>
     <string name="label_play_games">Play Games</string>
+    <string name="label_scan_trash_en">Scan Trash</string>
+    <string name="label_scan_trash_tl">I-scan ang Basura</string>
+    <string name="label_play_games_en">Play Games</string>
+    <string name="label_play_games_tl">Maglaro</string>
     <string name="label_choose_level">Choose Your\nLevel!</string>
+    <string name="label_choose_level_en">Choose Your\nLevel!</string>
+    <string name="label_choose_level_tl">Piliin ang\nLevel!</string>
+    <string name="label_choose_level_street">Choose Your\nLevel!\n(Street Cleanup)</string>
+    <string name="label_choose_level_trash">Choose Your\nLevel!\n(Trash Sorting)</string>
+    <string name="label_choose_level_street_en">Choose Your\nLevel!\n(Street Cleanup)</string>
+    <string name="label_choose_level_street_tl">Piliin ang\nLevel!\n(Paglilinis ng Kalsada)</string>
+    <string name="label_choose_level_trash_en">Choose Your\nLevel!\n(Trash Sorting)</string>
+    <string name="label_choose_level_trash_tl">Piliin ang\nLevel!\n(Pagsasaayos ng Basura)</string>
     <string name="label_trash_sorting">Trash Sorting</string>
     <string name="label_street_cleanup">Street Cleanup</string>
     <string name="label_choose_sample_item">Choose a sample item</string>
@@ -57,6 +69,18 @@
     <string name="desc_easy">Learn and play at your own pace!</string>
     <string name="desc_medium">Sort a little faster!</string>
     <string name="desc_hard">Test what you\'ve learned!</string>
+    <string name="label_easy_en">Easy</string>
+    <string name="label_easy_tl">Madali</string>
+    <string name="label_medium_en">Medium</string>
+    <string name="label_medium_tl">Katamtaman</string>
+    <string name="label_hard_en">Hard</string>
+    <string name="label_hard_tl">Mahirap</string>
+    <string name="desc_easy_en">Learn and play at your own pace!</string>
+    <string name="desc_easy_tl">Maglaro at matuto sa sariling bilis!</string>
+    <string name="desc_medium_en">Sort a little faster!</string>
+    <string name="desc_medium_tl">Bilis-bilisan nang kaunti!</string>
+    <string name="desc_hard_en">Test what you\'ve learned!</string>
+    <string name="desc_hard_tl">Subukan ang natutunan mo!</string>
 
     <!-- Bins / categories -->
     <string name="bin_green_bio">Green bin - biodegradable</string>
@@ -65,6 +89,10 @@
     <string name="bin_blue_non_bio_cap">Blue bin - Non-biodegradable</string>
     <string name="category_biodegradable">Biodegradable</string>
     <string name="category_non_biodegradable">Non-biodegradable</string>
+    <string name="category_biodegradable_en">Biodegradable</string>
+    <string name="category_biodegradable_tl">Nabubulok</string>
+    <string name="category_non_biodegradable_en">Non-biodegradable</string>
+    <string name="category_non_biodegradable_tl">Di-nabubulok</string>
     <string name="category_di_nabubulok">Di-Nabubulok</string>
     <string name="category_nabubulok">Nabubulok</string>
     <string name="category_unknown">Unknown item</string>
@@ -133,19 +161,74 @@
 
     <!-- Game instructions / info -->
     <string name="street_intro">Street cleanup game started. Drag each trash item into the correct bin. Biodegradable trash goes into the green bin, and non biodegradable trash goes into the blue bin. Clean the street before the time runs out.</string>
+    <string name="street_intro_en">Street cleanup game started. Drag each trash item into the correct bin. Biodegradable trash goes into the green bin, and non biodegradable trash goes into the blue bin. Clean the street before the time runs out.</string>
+    <string name="street_intro_tl">Nagsimula na ang street cleanup game. I-drag ang bawat basura sa tamang basurahan. Ang nabubulok ay sa green bin, at ang di-nabubulok ay sa blue bin. Linisin ang kalsada bago maubos ang oras.</string>
+    <string name="street_result_success_speech">Good work! You finished the %1$s level with %2$d correct and %3$d wrong. You had %4$d seconds left.</string>
+    <string name="street_result_success_speech_en">Good work! You finished the %1$s level with %2$d correct and %3$d wrong. You had %4$d seconds left.</string>
+    <string name="street_result_success_speech_tl">Magaling! Natapos mo ang %1$s level na may %2$d tama at %3$d mali. May natitira ka pang %4$d segundo.</string>
+    <string name="street_result_fail_time_speech">Oh no. Time is up. You got %1$d correct and %2$d wrong. Try again and clean everything before the time runs out.</string>
+    <string name="street_result_fail_time_speech_en">Oh no. Time is up. You got %1$d correct and %2$d wrong. Try again and clean everything before the time runs out.</string>
+    <string name="street_result_fail_time_speech_tl">Ay naku. Ubos na ang oras. May %1$d tama at %2$d mali ka. Subukan ulit at linisin ang lahat bago maubos ang oras.</string>
+    <string name="street_result_fail_low_speech">You sorted all %1$d items, but some went into the wrong bin. You got %2$d correct and %3$d wrong. Try again to improve your score.</string>
+    <string name="street_result_fail_low_speech_en">You sorted all %1$d items, but some went into the wrong bin. You got %2$d correct and %3$d wrong. Try again to improve your score.</string>
+    <string name="street_result_fail_low_speech_tl">Na-sort mo ang lahat ng %1$d item, pero may napunta sa maling basurahan. May %2$d tama at %3$d mali ka. Subukan ulit para tumaas ang score mo.</string>
+    <string name="street_sorted_all_items">You sorted all %1$d items.</string>
     <string name="street_correct_bin">Drag %1$s into the correct bin.</string>
     <string name="street_should_go_bin">%1$s should go to the %2$s.</string>
     <string name="street_green_bin_text">green bin</string>
     <string name="street_blue_bin_text">blue bin</string>
+    <string name="street_green_bin_text_en">green bin</string>
+    <string name="street_green_bin_text_tl">green bin</string>
+    <string name="street_blue_bin_text_en">blue bin</string>
+    <string name="street_blue_bin_text_tl">blue bin</string>
     <string name="street_bio_items">These items belong to the biodegradable bin:</string>
     <string name="street_nonbio_items">These items belong to the non-biodegradable bin:</string>
+    <string name="street_bio_items_en">These items belong to the biodegradable bin:</string>
+    <string name="street_bio_items_tl">Ang mga item na ito ay para sa nabubulok na basurahan:</string>
+    <string name="street_nonbio_items_en">These items belong to the non-biodegradable bin:</string>
+    <string name="street_nonbio_items_tl">Ang mga item na ito ay para sa di-nabubulok na basurahan:</string>
     <string name="street_game_info_1">Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly.</string>
     <string name="street_game_info_2">Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains.</string>
+    <string name="street_game_info_1_en">Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly.</string>
+    <string name="street_game_info_1_tl">Ang mga nabubulok na bagay tulad ng food waste, papel, at dahon ay dapat sa green bin para mabulok nang maayos.</string>
+    <string name="street_game_info_2_en">Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains.</string>
+    <string name="street_game_info_2_tl">Ang mga di-nabubulok na bagay tulad ng plastic, bote, at styrofoam ay dapat sa blue bin para hindi makabara at makapagdulot ng polusyon.</string>
     <string name="street_game_intro_footer">During the game, drag each piece of trash into the correct bin before the time runs out.</string>
+    <string name="street_game_intro_footer_en">During the game, drag each piece of trash into the correct bin before the time runs out.</string>
+    <string name="street_game_intro_footer_tl">Habang naglalaro, i-drag ang bawat basura sa tamang basurahan bago maubos ang oras.</string>
+    <string name="trash_intro">Trash sorting game started. Drag each trash item into the correct bin. Biodegradable trash goes in the green bin, and non biodegradable trash goes in the blue bin.</string>
+    <string name="trash_intro_en">Trash sorting game started. Drag each trash item into the correct bin. Biodegradable trash goes in the green bin, and non biodegradable trash goes in the blue bin.</string>
+    <string name="trash_intro_tl">Nagsimula na ang trash sorting game. I-drag ang bawat basura sa tamang basurahan. Ang nabubulok ay sa green bin, at ang di-nabubulok ay sa blue bin.</string>
+    <string name="trash_result_success_speech">Good work! You finished the level with %1$d correct and %2$d wrong.</string>
+    <string name="trash_result_success_speech_en">Good work! You finished the level with %1$d correct and %2$d wrong.</string>
+    <string name="trash_result_success_speech_tl">Magaling! Natapos mo ang level na may %1$d tama at %2$d mali.</string>
+    <string name="trash_level_complete_message">You finished the level!\n\n%1$s</string>
+    <string name="dialog_title_bio_green">Biodegradable – GREEN bin</string>
+    <string name="dialog_title_nonbio_blue">Non-biodegradable – BLUE bin</string>
+    <string name="dialog_title_bio_green_en">Biodegradable – GREEN bin</string>
+    <string name="dialog_title_bio_green_tl">Nabubulok – GREEN bin</string>
+    <string name="dialog_title_nonbio_blue_en">Non-biodegradable – BLUE bin</string>
+    <string name="dialog_title_nonbio_blue_tl">Di-nabubulok – BLUE bin</string>
+
+    <!-- Waste item labels -->
+    <string name="item_banana_peel">Banana Peel</string>
+    <string name="item_fruit">Fruit</string>
+    <string name="item_leaf">Leaf</string>
+    <string name="item_grass">Grass</string>
+    <string name="item_paper">Paper</string>
+    <string name="item_tissue">Tissue</string>
+    <string name="item_plastic_cup">Plastic Cup</string>
+    <string name="item_candy_wrapper">Candy Wrapper</string>
+    <string name="item_styrofoam_box">Styrofoam Box</string>
+    <string name="item_this_trash">This trash</string>
 
     <!-- Games -->
     <string name="game_trash_sorting">Trash Sorting Game</string>
     <string name="game_street_cleanup">Street Cleanup Game</string>
+    <string name="game_trash_sorting_en">Trash Sorting Game</string>
+    <string name="game_trash_sorting_tl">Laro ng Pagsasaayos ng Basura</string>
+    <string name="game_street_cleanup_en">Street Cleanup Game</string>
+    <string name="game_street_cleanup_tl">Laro ng Paglilinis ng Kalsada</string>
     <string name="game_trash_sorting_short">Trash Sorting</string>
     <string name="game_street_cleanup_short">Street Cleanup</string>
 

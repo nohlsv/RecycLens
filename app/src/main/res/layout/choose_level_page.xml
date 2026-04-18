@@ -73,6 +73,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvEasyLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_easy"
@@ -82,6 +83,7 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:id="@+id/tvEasyDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/desc_easy"
@@ -113,6 +115,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvMediumLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_medium"
@@ -122,6 +125,7 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:id="@+id/tvMediumDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/desc_medium"
@@ -152,6 +156,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvHardLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/label_hard"
@@ -161,6 +166,7 @@
                     android:textColor="#FFFFFF"/>
 
                 <TextView
+                    android:id="@+id/tvHardDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/desc_hard"

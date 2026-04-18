@@ -12,6 +12,7 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
@@ -20,16 +21,16 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.ArrayAdapter
-import android.view.LayoutInflater
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -100,8 +101,10 @@ class ScannerActivity : AppCompatActivity() {
     private var ttsReady: Boolean = false
     private var speakTextEn: String? = null
     private var speakTextTl: String? = null
+    private var pendingSpeakText: String? = null
     private var wasMusicPlayingBeforeTts: Boolean = false
     private lateinit var feedbackBanner: RecyclensFeedbackBanner
+    private lateinit var styledDialog: RecyclensDialog
 
     private data class PresetSample(
         val label: String,
@@ -170,6 +173,7 @@ class ScannerActivity : AppCompatActivity() {
         setContentView(R.layout.scanner_page)
         BackgroundDriftHelper.attach(this)
         feedbackBanner = RecyclensFeedbackBanner(this)
+        styledDialog = RecyclensDialog(this)
         isEnglish = LanguagePrefs.isEnglish(this)
 
         mediaPlayer = MediaPlayer.create(this, R.raw.recyclens_browsing_music)
@@ -222,6 +226,24 @@ class ScannerActivity : AppCompatActivity() {
                         }
                     }
                 })
+
+                val queued = pendingSpeakText
+                if (!queued.isNullOrBlank()) {
+                    pendingSpeakText = null
+                    val result = tts?.speak(queued, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
+                    if (result == TextToSpeech.ERROR) {
+                        feedbackBanner.show(
+                            if (isEnglish) "Voice guide could not play." else "Hindi ma-play ang voice guide.",
+                            RecyclensFeedbackBanner.Style.ERROR
+                        )
+                    }
+                }
+            } else {
+                ttsReady = false
+                feedbackBanner.show(
+                    if (isEnglish) "Voice guide is unavailable on this device." else "Hindi available ang voice guide sa device na ito.",
+                    RecyclensFeedbackBanner.Style.WARNING
+                )
             }
         }
 
@@ -274,18 +296,23 @@ class ScannerActivity : AppCompatActivity() {
         btnPreset.setOnClickListener { showPresetPicker() }
 
         btnSpeaker.setOnClickListener {
-            val text = if (isEnglish) speakTextEn else speakTextTl
-            if (!ttsReady || tts == null) {
-                feedbackBanner.show(
-                    if (isEnglish) "Voice guide is not ready yet." else "Hindi pa handa ang voice guide.",
-                    RecyclensFeedbackBanner.Style.INFO
-                )
-                return@setOnClickListener
-            }
-            if (text.isNullOrBlank()) {
+            val preferredText = if (isEnglish) speakTextEn else speakTextTl
+            val fallback = buildFallbackSpeakText()
+            val text = preferredText?.takeIf { it.isNotBlank() } ?: fallback
+
+            if (text.isBlank()) {
                 feedbackBanner.show(
                     if (isEnglish) "Scan a trash item first." else "Mag-scan muna ng basura.",
                     RecyclensFeedbackBanner.Style.WARNING
+                )
+                return@setOnClickListener
+            }
+
+            if (!ttsReady || tts == null) {
+                pendingSpeakText = text
+                feedbackBanner.show(
+                    if (isEnglish) "Voice guide is loading. Please tap again in a moment." else "Naglo-load pa ang voice guide. Pindutin muli sandali.",
+                    RecyclensFeedbackBanner.Style.INFO
                 )
                 return@setOnClickListener
             }
@@ -296,8 +323,22 @@ class ScannerActivity : AppCompatActivity() {
             }
 
             updateTtsLanguage()
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
+            val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
+            if (result == TextToSpeech.ERROR) {
+                feedbackBanner.show(
+                    if (isEnglish) "Voice guide could not play." else "Hindi ma-play ang voice guide.",
+                    RecyclensFeedbackBanner.Style.ERROR
+                )
+            }
         }
+    }
+
+    private fun buildFallbackSpeakText(): String {
+        val parts = mutableListOf<String>()
+        titleBar.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
+        infoTitle.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
+        infoText.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
+        return parts.joinToString(". ")
     }
 
     private fun setupLanguageToggle() {
@@ -305,19 +346,21 @@ class ScannerActivity : AppCompatActivity() {
         langToggle.setOnClickListener {
             isEnglish = LanguagePrefs.toggle(this)
             LanguagePrefs.applyLocale(this)
-            recreate()
+            updateLanguageTexts()
+            renderPredictionOrIdle()
+            updateTtsLanguage()
         }
     }
 
     private fun updateLanguageTexts() {
         if (isEnglish) {
             langText.text = getString(R.string.label_en)
-            labelScan.text = getString(R.string.label_scan_trash)
-            labelPlay.text = getString(R.string.label_play_games)
+            labelScan.text = getString(R.string.label_scan_trash_en)
+            labelPlay.text = getString(R.string.label_play_games_en)
         } else {
             langText.text = getString(R.string.label_tl)
-            labelScan.text = getString(R.string.scanner_i_scan_ang_basura)
-            labelPlay.text = getString(R.string.label_play_games)
+            labelScan.text = getString(R.string.label_scan_trash_tl)
+            labelPlay.text = getString(R.string.label_play_games_tl)
         }
     }
 
@@ -495,29 +538,64 @@ class ScannerActivity : AppCompatActivity() {
             if (isEnglish) sample.nameEn else sample.nameTl
         }
 
-        val adapter = object : ArrayAdapter<String>(
-            this,
-            R.layout.dialog_preset_sample_item,
-            labels
-        ) {
-            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                val view = convertView ?: LayoutInflater.from(context)
-                    .inflate(R.layout.dialog_preset_sample_item, parent, false)
-                val icon = view.findViewById<ImageView>(R.id.presetItemIcon)
-                val label = view.findViewById<TextView>(R.id.presetItemLabel)
-                icon.setImageResource(presetSamples[position].drawableRes)
-                label.text = labels[position]
-                return view
+        val rowsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(8), 0, 0)
+        }
+
+        val dialogRef = arrayOfNulls<androidx.appcompat.app.AlertDialog>(1)
+
+        for (i in presetSamples.indices) {
+            val row = layoutInflater.inflate(R.layout.dialog_preset_sample_item, rowsContainer, false)
+            val icon = row.findViewById<ImageView>(R.id.presetItemIcon)
+            val label = row.findViewById<TextView>(R.id.presetItemLabel)
+
+            icon.setImageResource(presetSamples[i].drawableRes)
+            label.text = labels[i]
+
+            row.background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(14).toFloat()
+                setColor(Color.parseColor("#FFF7E8"))
+                setStroke(dp(1), Color.parseColor("#E7CFA0"))
+            }
+            row.isClickable = true
+            row.isFocusable = true
+            row.setPadding(dp(12), dp(10), dp(12), dp(10))
+
+            val rowLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(8)
+            }
+            rowsContainer.addView(row, rowLp)
+
+            row.setOnClickListener {
+                dialogRef[0]?.dismiss()
+                applyPresetSample(presetSamples[i])
             }
         }
 
-        AlertDialog.Builder(this)
-            .setTitle(if (isEnglish) getString(R.string.dialog_choose_sample_title) else getString(R.string.dialog_choose_sample_title_tl))
-            .setAdapter(adapter) { _, which ->
-                applyPresetSample(presetSamples[which])
-            }
-            .setNegativeButton(if (isEnglish) getString(R.string.action_cancel) else getString(R.string.action_cancel), null)
-            .show()
+        val content = ScrollView(this).apply {
+            isFillViewport = true
+            addView(
+                rowsContainer,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            )
+        }
+
+        dialogRef[0] = styledDialog.show(
+            title = getString(R.string.dialog_choose_sample_title),
+            message = "",
+            positiveText = getString(R.string.action_close),
+            negativeText = null,
+            tone = RecyclensDialog.Tone.INFO,
+            contentView = content
+        )
     }
 
     private fun applyPresetSample(sample: PresetSample) {
@@ -1611,4 +1689,6 @@ class ScannerActivity : AppCompatActivity() {
         val bmp = BitmapFactory.decodeFile(file.absolutePath, opts) ?: return null
         return applyExifOrientation(bmp, orientation)
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

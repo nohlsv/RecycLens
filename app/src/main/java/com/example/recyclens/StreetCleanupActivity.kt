@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 import java.util.Locale
 import kotlin.random.Random
 
-class StreetCleanupActivity : AppCompatActivity() {
+class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -34,6 +34,7 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private lateinit var gameArea: FrameLayout
     private lateinit var btnStart: TextView
+    private lateinit var titleStreet: TextView
     private lateinit var tvLevel: TextView
     private lateinit var bioBin: View
     private lateinit var nonBioBin: View
@@ -84,6 +85,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         rootLayout.setBackgroundResource(R.drawable.trash_sorting_game_background)
         gameArea = findViewById(R.id.gameAreaStreet)
         btnStart = findViewById(R.id.btnStartStreet)
+        titleStreet = findViewById(R.id.titleStreet)
         tvLevel = findViewById(R.id.tvLevel)
         bioBin = findViewById(R.id.binGreenStreet)
         nonBioBin = findViewById(R.id.binBlueStreet)
@@ -105,7 +107,7 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
+                tts?.language = if (LanguagePrefs.isEnglish(this)) Locale.US else Locale.forLanguageTag("tl-PH")
                 tts?.setSpeechRate(1.0f)
                 tts?.setPitch(1.0f)
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -147,24 +149,8 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         level = intent.getIntExtra("extra_level", 1)
-        when (level) {
-            1 -> {
-                tvLevel.text = getString(R.string.label_easy)
-                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
-            }
-            2 -> {
-                tvLevel.text = getString(R.string.label_medium)
-                tvLevel.setBackgroundResource(R.drawable.level_bg_medium)
-            }
-            3 -> {
-                tvLevel.text = getString(R.string.label_hard)
-                tvLevel.setBackgroundResource(R.drawable.level_bg_hard)
-            }
-            else -> {
-                tvLevel.text = getString(R.string.label_easy)
-                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
-            }
-        }
+        applyLevelBadgeText()
+        refreshLocalizedTexts()
 
         levelConfig = loadLevelConfig(level)
         allItems = loadItemsFromDb()
@@ -192,6 +178,53 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         setupBottomBar(BottomBar.Tab.PLAY)
         RecyclensEntryAnimator.play(this)
+    }
+
+    override fun onLanguageChanged() {
+        refreshLocalizedTexts()
+    }
+
+    private fun refreshLocalizedTexts() {
+        val isEnglish = LanguagePrefs.isEnglish(this)
+        titleStreet.text = getString(if (isEnglish) R.string.game_street_cleanup_en else R.string.game_street_cleanup_tl)
+        applyLevelBadgeText()
+
+        btnStart.text = if ((timer != null) || (remainingItems > 0)) {
+            getString(R.string.status_time_running)
+        } else {
+            getString(R.string.start_button)
+        }
+
+        tvTimer.text = if (timer != null) {
+            getString(R.string.time_format, secondsLeft)
+        } else {
+            getString(R.string.label_time_zero)
+        }
+
+        if (ttsReady) {
+            tts?.language = if (isEnglish) Locale.US else Locale.forLanguageTag("tl-PH")
+        }
+    }
+
+    private fun applyLevelBadgeText() {
+        when (level) {
+            1 -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
+            2 -> {
+                tvLevel.text = getString(R.string.label_medium)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_medium)
+            }
+            3 -> {
+                tvLevel.text = getString(R.string.label_hard)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_hard)
+            }
+            else -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
+        }
     }
 
     override fun onResume() {
@@ -223,6 +256,14 @@ class StreetCleanupActivity : AppCompatActivity() {
     private fun speak(text: String, utteranceId: String) {
         if (!ttsReady) return
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+    }
+
+    private fun tr(enRes: Int, tlRes: Int): String {
+        return getString(if (LanguagePrefs.isEnglish(this)) enRes else tlRes)
+    }
+
+    private fun trf(enRes: Int, tlRes: Int, vararg args: Any): String {
+        return if (LanguagePrefs.isEnglish(this)) getString(enRes, *args) else getString(tlRes, *args)
     }
 
     private fun stopTts() {
@@ -353,7 +394,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         rootLayout.setBackgroundResource(R.drawable.trash_sorting_game_background)
         btnStart.text = getString(R.string.status_time_running)
 
-        val intro = "Street cleanup game started. Drag each trash item into the correct bin. Biodegradable trash goes into the green bin, and non biodegradable trash goes into the blue bin. Clean the street before the time runs out."
+        val intro = tr(R.string.street_intro_en, R.string.street_intro_tl)
         if (ttsReady) {
             speak(intro, "STREET_START_GAME")
             gameArea.postDelayed(startRoundFallback, 7000L)
@@ -668,7 +709,14 @@ class StreetCleanupActivity : AppCompatActivity() {
             wrong = wrongCount
         )
 
-        val speakText = "Good work! You finished the $levelName level with $correctCount correct and $wrongCount wrong. You had $secondsLeft seconds left."
+        val speakText = trf(
+            R.string.street_result_success_speech_en,
+            R.string.street_result_success_speech_tl,
+            levelName,
+            correctCount,
+            wrongCount,
+            secondsLeft
+        )
         speak(speakText, "STREET_RESULT_SUCCESS")
         btnStart.text = getString(R.string.start_button)
 
@@ -700,7 +748,12 @@ class StreetCleanupActivity : AppCompatActivity() {
             wrong = wrongCount + remainingItems
         )
 
-        val speakText = "Oh no. Time is up. You got $correctCount correct and $wrongCount wrong. Try again and clean everything before the time runs out."
+        val speakText = trf(
+            R.string.street_result_fail_time_speech_en,
+            R.string.street_result_fail_time_speech_tl,
+            correctCount,
+            wrongCount
+        )
         speak(speakText, "STREET_RESULT_FAIL_TIME")
         btnStart.text = getString(R.string.start_button)
 
@@ -723,7 +776,7 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun showLowScoreDialog() {
         val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
-        val itemsText = "You sorted all $totalItems items."
+        val itemsText = getString(R.string.street_sorted_all_items, totalItems)
 
         saveGameResultToDb(
             totalScore = correctCount,
@@ -731,7 +784,13 @@ class StreetCleanupActivity : AppCompatActivity() {
             wrong = wrongCount
         )
 
-        val speakText = "You sorted all $totalItems items, but some went into the wrong bin. You got $correctCount correct and $wrongCount wrong. Try again to improve your score."
+        val speakText = trf(
+            R.string.street_result_fail_low_speech_en,
+            R.string.street_result_fail_low_speech_tl,
+            totalItems,
+            correctCount,
+            wrongCount
+        )
         speak(speakText, "STREET_RESULT_FAIL_LOW")
         btnStart.text = getString(R.string.start_button)
 
@@ -756,38 +815,38 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     private fun getTrashDisplayName(item: WasteItem): String {
         return when (item.resName) {
-            "ic_trash_banana" -> "Banana Peel"
-            "ic_trash_fruit" -> "Fruit"
-            "ic_trash_leaf" -> "Leaf"
-            "ic_trash_grass" -> "Grass"
-            "ic_trash_paper" -> "Paper"
-            "ic_trash_tissue" -> "Tissue"
-            "ic_trash_plastic_cup" -> "Plastic Cup"
-            "ic_trash_bottle" -> "Plastic Bottle"
-            "ic_trash_wrapper" -> "Candy Wrapper"
-            "ic_trash_styro" -> "Styrofoam Box"
-            else -> "This trash"
+            "ic_trash_banana" -> getString(R.string.item_banana_peel)
+            "ic_trash_fruit" -> getString(R.string.item_fruit)
+            "ic_trash_leaf" -> getString(R.string.item_leaf)
+            "ic_trash_grass" -> getString(R.string.item_grass)
+            "ic_trash_paper" -> getString(R.string.item_paper)
+            "ic_trash_tissue" -> getString(R.string.item_tissue)
+            "ic_trash_plastic_cup" -> getString(R.string.item_plastic_cup)
+            "ic_trash_bottle" -> getString(R.string.item_plastic_bottle)
+            "ic_trash_wrapper" -> getString(R.string.item_candy_wrapper)
+            "ic_trash_styro" -> getString(R.string.item_styrofoam_box)
+            else -> getString(R.string.item_this_trash)
         }
     }
 
     private fun getCorrectBinText(item: WasteItem): String {
         return if (item.isBiodegradable) {
-            "green biodegradable bin"
+            getString(R.string.bin_green_bio)
         } else {
-            "blue non biodegradable bin"
+            getString(R.string.bin_blue_non_bio)
         }
     }
 
     private fun showInstructionDialog(page: Int = 1) {
         val title = if (page == 1) {
-            getString(R.string.category_biodegradable)
+            tr(R.string.category_biodegradable_en, R.string.category_biodegradable_tl)
         } else {
-            getString(R.string.category_non_biodegradable)
+            tr(R.string.category_non_biodegradable_en, R.string.category_non_biodegradable_tl)
         }
         val text = if (page == 1) {
-            getString(R.string.street_game_info_1)
+            tr(R.string.street_game_info_1_en, R.string.street_game_info_1_tl)
         } else {
-            getString(R.string.street_game_info_2)
+            tr(R.string.street_game_info_2_en, R.string.street_game_info_2_tl)
         }
 
         val content = createInstructionContent(page)
@@ -848,7 +907,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         val binLabel = TextView(this).apply {
-            text = if (page == 1) getString(R.string.street_green_bin_text) else getString(R.string.street_blue_bin_text)
+            text = if (page == 1) tr(R.string.street_green_bin_text_en, R.string.street_green_bin_text_tl) else tr(R.string.street_blue_bin_text_en, R.string.street_blue_bin_text_tl)
             textSize = 15f
             setTextColor(Color.parseColor("#4A3B2A"))
             setPadding(dp(12), 0, 0, 0)
@@ -859,7 +918,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         layout.addView(headerRow)
 
         val subtitle = TextView(this).apply {
-            text = if (page == 1) getString(R.string.street_bio_items) else getString(R.string.street_nonbio_items)
+            text = if (page == 1) tr(R.string.street_bio_items_en, R.string.street_bio_items_tl) else tr(R.string.street_nonbio_items_en, R.string.street_nonbio_items_tl)
             textSize = 14f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -867,19 +926,19 @@ class StreetCleanupActivity : AppCompatActivity() {
 
         val items = if (page == 1) {
             listOf(
-                R.drawable.ic_trash_banana to "Banana Peel",
-                R.drawable.ic_trash_fruit to "Fruit",
-                R.drawable.ic_trash_leaf to "Leaf",
-                R.drawable.ic_trash_grass to "Grass",
-                R.drawable.ic_trash_paper to "Paper",
-                R.drawable.ic_trash_tissue to "Tissue"
+                R.drawable.ic_trash_banana to getString(R.string.item_banana_peel),
+                R.drawable.ic_trash_fruit to getString(R.string.item_fruit),
+                R.drawable.ic_trash_leaf to getString(R.string.item_leaf),
+                R.drawable.ic_trash_grass to getString(R.string.item_grass),
+                R.drawable.ic_trash_paper to getString(R.string.item_paper),
+                R.drawable.ic_trash_tissue to getString(R.string.item_tissue)
             )
         } else {
             listOf(
-                R.drawable.ic_trash_plastic_cup to "Plastic Cup",
-                R.drawable.ic_trash_bottle to "Plastic Bottle",
-                R.drawable.ic_trash_wrapper to "Candy Wrapper",
-                R.drawable.ic_trash_styro to "Styrofoam Box"
+                R.drawable.ic_trash_plastic_cup to getString(R.string.item_plastic_cup),
+                R.drawable.ic_trash_bottle to getString(R.string.item_plastic_bottle),
+                R.drawable.ic_trash_wrapper to getString(R.string.item_candy_wrapper),
+                R.drawable.ic_trash_styro to getString(R.string.item_styrofoam_box)
             )
         }
 
@@ -909,7 +968,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         val hint = TextView(this).apply {
-            text = "\n${getString(R.string.street_game_intro_footer)}"
+            text = "\n${tr(R.string.street_game_intro_footer_en, R.string.street_game_intro_footer_tl)}"
             textSize = 13f
             setTextColor(Color.parseColor("#4A3B2A"))
         }

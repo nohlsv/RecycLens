@@ -58,6 +58,7 @@
                     app:shapeAppearanceOverlay="@style/RoundedCorners"
                     />
                 <TextView
+                    android:id="@+id/tvTrashSortingTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
@@ -111,6 +112,7 @@
                     />
 
                 <TextView
+                    android:id="@+id/tvStreetCleanupTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"

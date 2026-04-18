@@ -3,15 +3,19 @@ package com.example.recyclens
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
-class GameSelectActivity : AppCompatActivity() {
+class GameSelectActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     companion object {
         const val EXTRA_GAME_TYPE = "extra_game_type"
         const val GAME_TRASH_SORTING = "TRASH"
         const val GAME_STREET_CLEANUP = "STREET"
     }
+
+    private lateinit var tvTrashTitle: TextView
+    private lateinit var tvStreetTitle: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,6 +27,10 @@ class GameSelectActivity : AppCompatActivity() {
 
         val cardTrash: View = findViewById(R.id.cardTrashSorting)
         val cardStreet: View = findViewById(R.id.cardStreetCleanup)
+        tvTrashTitle = findViewById(R.id.tvTrashSortingTitle)
+        tvStreetTitle = findViewById(R.id.tvStreetCleanupTitle)
+
+        refreshLocalizedTexts()
 
         cardTrash.setOnClickListener {
             openChooseLevel(GAME_TRASH_SORTING)
@@ -33,6 +41,16 @@ class GameSelectActivity : AppCompatActivity() {
         }
 
         RecyclensEntryAnimator.play(this)
+    }
+
+    override fun onLanguageChanged() {
+        refreshLocalizedTexts()
+    }
+
+    private fun refreshLocalizedTexts() {
+        val isEnglish = LanguagePrefs.isEnglish(this)
+        tvTrashTitle.text = getString(if (isEnglish) R.string.game_trash_sorting_en else R.string.game_trash_sorting_tl)
+        tvStreetTitle.text = getString(if (isEnglish) R.string.game_street_cleanup_en else R.string.game_street_cleanup_tl)
     }
 
     override fun onResume() {

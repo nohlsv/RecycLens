@@ -6,9 +6,16 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
-class ChooseLevelActivity : AppCompatActivity() {
+class ChooseLevelActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private var gameType: String = GameSelectActivity.GAME_TRASH_SORTING
+    private lateinit var tvTitle: TextView
+    private lateinit var tvEasyLabel: TextView
+    private lateinit var tvMediumLabel: TextView
+    private lateinit var tvHardLabel: TextView
+    private lateinit var tvEasyDesc: TextView
+    private lateinit var tvMediumDesc: TextView
+    private lateinit var tvHardDesc: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,20 +27,19 @@ class ChooseLevelActivity : AppCompatActivity() {
             ?: GameSelectActivity.GAME_TRASH_SORTING
 
         val btnBack: View = findViewById(R.id.btnBack)
-        val tvTitle: TextView = findViewById(R.id.tvTitle)
+        tvTitle = findViewById(R.id.tvTitle)
+        tvEasyLabel = findViewById(R.id.tvEasyLabel)
+        tvMediumLabel = findViewById(R.id.tvMediumLabel)
+        tvHardLabel = findViewById(R.id.tvHardLabel)
+        tvEasyDesc = findViewById(R.id.tvEasyDesc)
+        tvMediumDesc = findViewById(R.id.tvMediumDesc)
+        tvHardDesc = findViewById(R.id.tvHardDesc)
 
         val btnEasy: View = findViewById(R.id.btnEasy)
         val btnMedium: View = findViewById(R.id.btnMedium)
         val btnHard: View = findViewById(R.id.btnHard)
 
-        tvTitle.text = when (gameType) {
-            GameSelectActivity.GAME_STREET_CLEANUP ->
-                "Choose Your\nLevel!\n(Street Cleanup)"
-            GameSelectActivity.GAME_TRASH_SORTING ->
-                "Choose Your\nLevel!\n(Trash Sorting)"
-            else ->
-                "Choose Your\nLevel!"
-        }
+        refreshLocalizedTexts()
 
         btnBack.setOnClickListener { finish() }
 
@@ -43,6 +49,30 @@ class ChooseLevelActivity : AppCompatActivity() {
         setupBottomBar(BottomBar.Tab.PLAY)
 
         RecyclensEntryAnimator.play(this)
+    }
+
+    override fun onLanguageChanged() {
+        refreshLocalizedTexts()
+    }
+
+    private fun refreshLocalizedTexts() {
+        val isEnglish = LanguagePrefs.isEnglish(this)
+
+        tvTitle.text = when (gameType) {
+            GameSelectActivity.GAME_STREET_CLEANUP ->
+                getString(if (isEnglish) R.string.label_choose_level_street_en else R.string.label_choose_level_street_tl)
+            GameSelectActivity.GAME_TRASH_SORTING ->
+                getString(if (isEnglish) R.string.label_choose_level_trash_en else R.string.label_choose_level_trash_tl)
+            else ->
+                getString(if (isEnglish) R.string.label_choose_level_en else R.string.label_choose_level_tl)
+        }
+
+        tvEasyLabel.text = getString(if (isEnglish) R.string.label_easy_en else R.string.label_easy_tl)
+        tvMediumLabel.text = getString(if (isEnglish) R.string.label_medium_en else R.string.label_medium_tl)
+        tvHardLabel.text = getString(if (isEnglish) R.string.label_hard_en else R.string.label_hard_tl)
+        tvEasyDesc.text = getString(if (isEnglish) R.string.desc_easy_en else R.string.desc_easy_tl)
+        tvMediumDesc.text = getString(if (isEnglish) R.string.desc_medium_en else R.string.desc_medium_tl)
+        tvHardDesc.text = getString(if (isEnglish) R.string.desc_hard_en else R.string.desc_hard_tl)
     }
 
     private fun openGame(level: Int) {
