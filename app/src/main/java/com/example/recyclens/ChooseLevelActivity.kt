@@ -12,6 +12,7 @@ class ChooseLevelActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguagePrefs.applyLocale(this)
         setContentView(R.layout.choose_level_page)
         BackgroundDriftHelper.attach(this)
 
@@ -40,6 +41,8 @@ class ChooseLevelActivity : AppCompatActivity() {
         btnMedium.setOnClickListener { openGame(2) }
         btnHard.setOnClickListener   { openGame(3) }
         setupBottomBar(BottomBar.Tab.PLAY)
+
+        RecyclensEntryAnimator.play(this)
     }
 
     private fun openGame(level: Int) {

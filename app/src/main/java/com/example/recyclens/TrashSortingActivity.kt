@@ -61,6 +61,7 @@ class TrashSortingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguagePrefs.applyLocale(this)
         setContentView(R.layout.trash_sorting)
 
         feedbackBanner = RecyclensFeedbackBanner(this)
@@ -118,11 +119,23 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         selectedLevel = intent.getIntExtra("extra_level", 1)
-        tvLevel.text = when (selectedLevel) {
-            1 -> "Easy"
-            2 -> "Medium"
-            3 -> "Hard"
-            else -> "Easy"
+        when (selectedLevel) {
+            1 -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
+            2 -> {
+                tvLevel.text = getString(R.string.label_medium)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_medium)
+            }
+            3 -> {
+                tvLevel.text = getString(R.string.label_hard)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_hard)
+            }
+            else -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
         }
 
         allItems = loadItemsFromDb()
@@ -151,6 +164,7 @@ class TrashSortingActivity : AppCompatActivity() {
         }
 
         setupBottomBar(BottomBar.Tab.PLAY)
+        RecyclensEntryAnimator.play(this)
     }
 
     override fun onResume() {

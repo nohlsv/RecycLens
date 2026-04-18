@@ -1,6 +1,9 @@
 package com.example.recyclens
 
 import android.content.Context
+import android.content.res.Configuration
+import androidx.appcompat.app.AppCompatActivity
+import java.util.Locale
 
 object LanguagePrefs {
     private const val PREFS_NAME = "recyclens_prefs"
@@ -22,5 +25,18 @@ object LanguagePrefs {
         val next = !isEnglish(context)
         setEnglish(context, next)
         return next
+    }
+
+    fun applyLocale(activity: AppCompatActivity) {
+        val locale = if (isEnglish(activity)) {
+            Locale.US
+        } else {
+            Locale.forLanguageTag("tl-PH")
+        }
+
+        Locale.setDefault(locale)
+        val config = Configuration(activity.resources.configuration)
+        config.setLocale(locale)
+        activity.resources.updateConfiguration(config, activity.resources.displayMetrics)
     }
 }

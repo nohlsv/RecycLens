@@ -166,6 +166,7 @@ class ScannerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguagePrefs.applyLocale(this)
         setContentView(R.layout.scanner_page)
         BackgroundDriftHelper.attach(this)
         feedbackBanner = RecyclensFeedbackBanner(this)
@@ -232,6 +233,7 @@ class ScannerActivity : AppCompatActivity() {
 
         showLivePreview()
         renderPredictionOrIdle()
+        RecyclensEntryAnimator.play(this)
     }
 
     override fun onResume() {
@@ -301,13 +303,9 @@ class ScannerActivity : AppCompatActivity() {
     private fun setupLanguageToggle() {
         updateLanguageTexts()
         langToggle.setOnClickListener {
-            isEnglish = !isEnglish
-            LanguagePrefs.setEnglish(this, isEnglish)
-            updateLanguageTexts()
-            if (ttsReady) {
-                updateTtsLanguage()
-            }
-            renderPredictionOrIdle()
+            isEnglish = LanguagePrefs.toggle(this)
+            LanguagePrefs.applyLocale(this)
+            recreate()
         }
     }
 

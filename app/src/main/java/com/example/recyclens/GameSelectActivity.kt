@@ -15,6 +15,7 @@ class GameSelectActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguagePrefs.applyLocale(this)
         setContentView(R.layout.game_page)
         BackgroundDriftHelper.attach(this)
 
@@ -30,6 +31,8 @@ class GameSelectActivity : AppCompatActivity() {
         cardStreet.setOnClickListener {
             openChooseLevel(GAME_STREET_CLEANUP)
         }
+
+        RecyclensEntryAnimator.play(this)
     }
 
     override fun onResume() {

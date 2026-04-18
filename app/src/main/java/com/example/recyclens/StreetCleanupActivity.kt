@@ -74,6 +74,7 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguagePrefs.applyLocale(this)
         setContentView(R.layout.street_cleanup)
 
         feedbackBanner = RecyclensFeedbackBanner(this)
@@ -146,11 +147,23 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         level = intent.getIntExtra("extra_level", 1)
-        tvLevel.text = when (level) {
-            1 -> getString(R.string.label_easy)
-            2 -> getString(R.string.label_medium)
-            3 -> getString(R.string.label_hard)
-            else -> getString(R.string.label_easy)
+        when (level) {
+            1 -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
+            2 -> {
+                tvLevel.text = getString(R.string.label_medium)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_medium)
+            }
+            3 -> {
+                tvLevel.text = getString(R.string.label_hard)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_hard)
+            }
+            else -> {
+                tvLevel.text = getString(R.string.label_easy)
+                tvLevel.setBackgroundResource(R.drawable.level_bg_easy)
+            }
         }
 
         levelConfig = loadLevelConfig(level)
@@ -178,6 +191,7 @@ class StreetCleanupActivity : AppCompatActivity() {
         }
 
         setupBottomBar(BottomBar.Tab.PLAY)
+        RecyclensEntryAnimator.play(this)
     }
 
     override fun onResume() {
