@@ -4,6 +4,7 @@ package com.example.recyclens
 import android.app.Activity
 import android.content.Intent
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
 
@@ -13,9 +14,28 @@ object BottomBar {
     fun setup(activity: Activity, selected: Tab? = null) {
         val navScan: View? = activity.findViewById(R.id.navScan)
         val navPlay: View? = activity.findViewById(R.id.navPlay)
+        val langToggle: View? = activity.findViewById(R.id.langToggle)
+        val langText: TextView? = activity.findViewById(R.id.langText)
+        val labelScan: TextView? = activity.findViewById(R.id.labelScan)
+        val labelPlay: TextView? = activity.findViewById(R.id.labelPlay)
 
         navScan?.isSelected = (selected == Tab.SCAN)
         navPlay?.isSelected = (selected == Tab.PLAY)
+
+        fun applyLanguageUi() {
+            val isEnglish = LanguagePrefs.isEnglish(activity)
+            langText?.text = activity.getString(if (isEnglish) R.string.label_en else R.string.label_tl)
+            labelScan?.text = activity.getString(if (isEnglish) R.string.label_scan_trash else R.string.scanner_i_scan_ang_basura)
+            labelPlay?.text = activity.getString(R.string.label_play_games)
+        }
+
+        applyLanguageUi()
+
+        langToggle?.setOnClickListener {
+            LanguagePrefs.toggle(activity)
+            applyLanguageUi()
+            activity.recreate()
+        }
 
         navScan?.setOnClickListener {
             if (activity is ScannerActivity) return@setOnClickListener

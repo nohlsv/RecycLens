@@ -4,12 +4,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background"> <ScrollView
+    android:background="@drawable/background">
+
+    <ScrollView
     android:id="@+id/scroll"
     android:layout_width="0dp"
     android:layout_height="0dp"
     android:fillViewport="true"
     android:clipToPadding="false"
+    android:paddingTop="8dp"
+    android:paddingBottom="12dp"
     app:layout_constraintTop_toTopOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
@@ -29,6 +33,7 @@
             android:minHeight="112dp"
             android:background="@drawable/rounded_card"
             android:padding="8dp"
+            android:elevation="5dp"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground"
@@ -63,7 +68,13 @@
                     android:lineSpacingExtra="2dp"
                     android:text="@string/game_trash_sorting"
                     android:textColor="#214E2E"
-                    android:textSize="34sp" />
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="18sp"
+                    android:autoSizeMaxTextSize="28sp"
+                    android:autoSizeStepGranularity="1sp" />
             </LinearLayout>
         </FrameLayout>
 
@@ -71,9 +82,11 @@
             android:id="@+id/cardStreetCleanup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:minHeight="112dp"
             android:background="@drawable/rounded_card"
             android:padding="8dp"
+            android:elevation="5dp"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground"
@@ -108,12 +121,18 @@
                     android:lineSpacingExtra="2dp"
                     android:text="@string/game_street_cleanup"
                     android:textColor="#214E2E"
-                    android:textSize="34sp" />
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="18sp"
+                    android:autoSizeMaxTextSize="28sp"
+                    android:autoSizeStepGranularity="1sp" />
             </LinearLayout>
         </FrameLayout>
 
     </LinearLayout>
-</ScrollView>
+    </ScrollView>
 
     <include
         android:id="@+id/bottomBar"

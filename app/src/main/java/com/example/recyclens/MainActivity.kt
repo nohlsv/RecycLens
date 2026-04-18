@@ -13,6 +13,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.landing_page)
+        BackgroundDriftHelper.attach(this, R.drawable.plastic_background)
 
         mediaPlayer = MediaPlayer.create(this, R.raw.recyclens_browsing_music)
         mediaPlayer?.isLooping = true
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        BackgroundDriftHelper.detach(this)
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null

@@ -31,7 +31,6 @@
     <string name="time_used_format">Time used: %1$d second(s)</string>
     <string name="dialog_good_work">Good work!</string>
     <string name="dialog_level_complete">Level complete!</string>
-    <string name="dialog_level_complete_message">You finished the level!\n%1$s</string>
     <string name="dialog_level_complete_message_with_level">You finished the %1$s level!\n\n%2$s\n%3$s</string>
     <string name="dialog_time_up">Oh no!</string>
     <string name="dialog_time_up_message">The drains got blocked and the street flooded because some trash was left.\n\n%1$s\n%2$s\n\nTry again and clean everything before the time runs out!</string>
@@ -57,7 +56,7 @@
     <!-- Level descriptions -->
     <string name="desc_easy">Learn and play at your own pace!</string>
     <string name="desc_medium">Sort a little faster!</string>
-    <string name="desc_hard">Test what you've learned!</string>
+    <string name="desc_hard">Test what you\'ve learned!</string>
 
     <!-- Bins / categories -->
     <string name="bin_green_bio">Green bin - biodegradable</string>
@@ -103,6 +102,16 @@
     <string name="scanner_gumagamit_sample">Gumagamit ng sample image...</string>
     <string name="scanner_load_sample_fail">Could not load sample image</string>
     <string name="scanner_load_sample_fail_tl">Hindi ma-load ang sample image</string>
+    <string name="scanner_camera_permission_required">Camera permission is required to scan items</string>
+    <string name="scanner_camera_permission_required_tl">Kailangan ng camera permission para mag-scan</string>
+    <string name="scanner_not_sure">I\'m not sure</string>
+    <string name="scanner_hindi_sigurado">Hindi ako sigurado</string>
+    <string name="scanner_throw_blue">Throw in the Blue Bin.</string>
+    <string name="scanner_throw_green">Throw in the Green Bin.</string>
+    <string name="scanner_itapon_blue">Itapon sa Blue Bin.</string>
+    <string name="scanner_itapon_green">Itapon sa Green Bin.</string>
+    <string name="scanner_confidence">Confidence: %1$d%%</string>
+    <string name="scanner_confidence_tl">Katiyakan: %1$d%%</string>
 
     <!-- Picker / dialogs -->
     <string name="dialog_restart_game_title">Restart game?</string>

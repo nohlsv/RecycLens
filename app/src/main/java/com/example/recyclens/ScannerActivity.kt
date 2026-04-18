@@ -140,10 +140,10 @@ class ScannerActivity : AppCompatActivity() {
             if (granted) {
                 startCamera()
             } else {
-                val msg = if (isEnglish) 
-                    "Camera permission is required to scan items" 
-                else 
-                    "Kailangan ng camera permission para mag-scan"
+                val msg = if (isEnglish)
+                    getString(R.string.scanner_camera_permission_required)
+                else
+                    getString(R.string.scanner_camera_permission_required_tl)
                 feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
             }
         }
@@ -167,7 +167,9 @@ class ScannerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.scanner_page)
+        BackgroundDriftHelper.attach(this)
         feedbackBanner = RecyclensFeedbackBanner(this)
+        isEnglish = LanguagePrefs.isEnglish(this)
 
         mediaPlayer = MediaPlayer.create(this, R.raw.recyclens_browsing_music)
         mediaPlayer?.isLooping = true
@@ -244,6 +246,7 @@ class ScannerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        BackgroundDriftHelper.detach(this)
         cameraExecutor.shutdown()
         model2Interpreter.close()
         mediaPlayer?.stop()
@@ -299,6 +302,7 @@ class ScannerActivity : AppCompatActivity() {
         updateLanguageTexts()
         langToggle.setOnClickListener {
             isEnglish = !isEnglish
+            LanguagePrefs.setEnglish(this, isEnglish)
             updateLanguageTexts()
             if (ttsReady) {
                 updateTtsLanguage()
@@ -570,7 +574,7 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun classifyAndFetch(bitmap: Bitmap) {
-        titleBar.text = if (isEnglish) "Looking closely..." else "Tinitingnan ko mabuti..."
+        titleBar.text = if (isEnglish) getString(R.string.scanner_looking_closely) else getString(R.string.scanner_tinitingnan_mabuti)
         infoTitle.text = if (isEnglish) getString(R.string.scanner_analyzing) else getString(R.string.scanner_sinusuri)
         infoText.text =
             if (isEnglish) getString(R.string.scanner_checking_waste)
@@ -613,6 +617,10 @@ class ScannerActivity : AppCompatActivity() {
                 Log.d("RECYC_LENS_ML", "No prediction returned by MODEL2")
                 return null
             }
+        }
+        if (chosen.second < THRESHOLD) {
+            Log.d("RECYC_LENS_ML", "Prediction below threshold: ${chosen.second} < $THRESHOLD")
+            return null
         }
         Log.d("RECYC_LENS_ML", "Chosen label=${chosen.first} score=${chosen.second}")
         return PredictedItem(chosen.first, chosen.second)
@@ -932,13 +940,13 @@ class ScannerActivity : AppCompatActivity() {
         speakTextEn = null
         speakTextTl = null
         if (isEnglish) {
-            titleBar.text = "I'm not sure"
-            infoTitle.text = "Unknown item"
-            infoText.text = "Try another photo, choose from gallery, or use a sample image."
+            titleBar.text = getString(R.string.scanner_not_sure)
+            infoTitle.text = getString(R.string.category_unknown)
+            infoText.text = getString(R.string.scanner_try_another_desc)
         } else {
-            titleBar.text = "Hindi ako sigurado"
-            infoTitle.text = "Hindi kilala"
-            infoText.text = "Subukan ang ibang larawan, pumili sa gallery, o gumamit ng sample image."
+            titleBar.text = getString(R.string.scanner_hindi_sigurado)
+            infoTitle.text = getString(R.string.category_unknown_tl)
+            infoText.text = getString(R.string.scanner_try_another_desc_tl)
         }
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
@@ -1012,9 +1020,9 @@ class ScannerActivity : AppCompatActivity() {
                 category?.nameTl ?: if (isNonBio) getString(R.string.category_di_nabubulok) else getString(R.string.category_nabubulok)
 
             categoryDescEn =
-                category?.descriptionEn ?: if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
+                category?.descriptionEn ?: if (isNonBio) getString(R.string.scanner_throw_blue) else getString(R.string.scanner_throw_green)
             categoryDescTl =
-                category?.descriptionTl ?: if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
+                category?.descriptionTl ?: if (isNonBio) getString(R.string.scanner_itapon_blue) else getString(R.string.scanner_itapon_green)
         } else {
             materialNameEn = displayLabel
             materialNameTl = getTagalogMaterialName(materialNameEn) ?: materialNameEn
@@ -1027,9 +1035,9 @@ class ScannerActivity : AppCompatActivity() {
             categoryNameTl = if (isNonBio) getString(R.string.category_di_nabubulok) else getString(R.string.category_nabubulok)
 
             categoryDescEn =
-                if (isNonBio) "Throw in the Blue Bin." else "Throw in the Green Bin."
+                if (isNonBio) getString(R.string.scanner_throw_blue) else getString(R.string.scanner_throw_green)
             categoryDescTl =
-                if (isNonBio) "Itapon sa Blue Bin." else "Itapon sa Green Bin."
+                if (isNonBio) getString(R.string.scanner_itapon_blue) else getString(R.string.scanner_itapon_green)
         }
 
         val binRes = if (isNonBio) R.drawable.ic_blue_bin else R.drawable.ic_green_bin
@@ -1040,11 +1048,15 @@ class ScannerActivity : AppCompatActivity() {
         if (isEnglish) {
             titleBar.text = materialNameEn
             infoTitle.text = categoryNameEn
-            infoText.text = "$materialNameEn\n$categoryDescEn"
+            val confidence = (pred.confidence.coerceIn(0f, 1f) * 100f).toInt()
+            val confidenceText = getString(R.string.scanner_confidence, confidence)
+            infoText.text = "$materialNameEn\n$categoryDescEn\n$confidenceText"
         } else {
             titleBar.text = materialNameTl
             infoTitle.text = categoryNameTl
-            infoText.text = "$materialNameTl\n$categoryDescTl"
+            val confidence = (pred.confidence.coerceIn(0f, 1f) * 100f).toInt()
+            val confidenceText = getString(R.string.scanner_confidence_tl, confidence)
+            infoText.text = "$materialNameTl\n$categoryDescTl\n$confidenceText"
         }
 
         val imageName = material?.image ?: ""

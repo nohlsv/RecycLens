@@ -13,6 +13,7 @@ class ChooseLevelActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.choose_level_page)
+        BackgroundDriftHelper.attach(this)
 
         gameType = intent.getStringExtra(GameSelectActivity.EXTRA_GAME_TYPE)
             ?: GameSelectActivity.GAME_TRASH_SORTING
@@ -63,5 +64,10 @@ class ChooseLevelActivity : AppCompatActivity() {
         super.onResume()
         // When returning from a game, restart the browsing music.
         MusicManager.start(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        BackgroundDriftHelper.detach(this)
     }
 }

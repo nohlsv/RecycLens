@@ -18,6 +18,7 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/rounded_25"
         android:clipToOutline="true"
+        android:elevation="6dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -42,8 +43,13 @@
                 android:letterSpacing="0.01"
                 android:text="@string/info_title"
                 android:textColor="@color/blueTitle"
-                android:textSize="30sp"
-                android:textStyle="bold" />
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="14sp"
+                android:autoSizeMaxTextSize="28sp"
+                android:autoSizeStepGranularity="1sp" />
         </androidx.camera.view.PreviewView>
 
     </FrameLayout>
@@ -53,6 +59,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
+        android:layout_marginTop="2dp"
         app:layout_constraintTop_toBottomOf="@id/topCard"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -91,7 +98,7 @@
             android:layout_height="64dp"
             android:background="@drawable/btn_white_square"
             android:contentDescription="@string/cd_open_preset_samples"
-            android:src="@drawable/bxs_image"
+            android:src="@drawable/ic_recycle"
             android:tint="@color/blueTitle"
             android:elevation="4dp" />
     </LinearLayout>
@@ -106,6 +113,7 @@
         android:background="@drawable/rounded_card_green"
         android:minHeight="156dp"
         android:padding="16dp"
+        android:elevation="5dp"
         android:orientation="horizontal"
         app:layout_constraintTop_toBottomOf="@id/scanButtonsRow"
         app:layout_constraintStart_toStartOf="parent"
@@ -147,13 +155,14 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/info_description"
                 android:textColor="@android:color/black"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:lineSpacingExtra="2dp" />
         </LinearLayout>
 
         <ImageView
             android:id="@+id/infoRightIcon"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
             android:layout_marginStart="12dp"
             android:scaleType="centerInside"
             android:src="@drawable/ic_green_bin" />

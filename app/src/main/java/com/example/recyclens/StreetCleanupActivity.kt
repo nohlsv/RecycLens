@@ -196,6 +196,7 @@ class StreetCleanupActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        BackgroundDriftHelper.detach(this)
         gameArea.removeCallbacks(startRoundFallback)
         stopTts()
         tts?.shutdown()

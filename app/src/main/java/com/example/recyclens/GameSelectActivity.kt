@@ -16,6 +16,7 @@ class GameSelectActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.game_page)
+        BackgroundDriftHelper.attach(this)
 
         setupBottomBar(BottomBar.Tab.PLAY)
 
@@ -39,6 +40,11 @@ class GameSelectActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         MusicManager.pause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        BackgroundDriftHelper.detach(this)
     }
 
     private fun openChooseLevel(gameType: String) {
