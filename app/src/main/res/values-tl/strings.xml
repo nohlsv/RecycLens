@@ -222,15 +222,18 @@
 
     <!-- Waste item labels -->
     <string name="item_banana_peel">Balat ng saging</string>
+    <string name="item_fruit_vegetable_peels">Balat ng prutas at gulay</string>
     <string name="item_fruit">Prutas</string>
     <string name="item_leaf">Dahon</string>
     <string name="item_grass">Damo</string>
     <string name="item_paper">Papel</string>
     <string name="item_tissue">Tisyu</string>
-    <string name="item_plastic_bottle">Plastic na bote</string>
-    <string name="item_plastic_cup">Plastic na baso</string>
-    <string name="item_candy_wrapper">Balot ng kendi</string>
+    <string name="item_plastic_bottle">Boteng Plastik</string>
+    <string name="item_plastic_cup">Plastik na Baso</string>
+    <string name="item_candy_wrapper">Balat ng chichirya</string>
     <string name="item_styrofoam_box">Styrofoam na lalagyan</string>
+    <string name="item_can">Lata</string>
+    <string name="item_vegetable">Gulay</string>
     <string name="item_this_trash">Ang basurang ito</string>
 
     <!-- Scanner page -->

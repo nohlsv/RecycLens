@@ -212,14 +212,17 @@
 
     <!-- Waste item labels -->
     <string name="item_banana_peel">Banana Peel</string>
+    <string name="item_fruit_vegetable_peels">Fruit and Vegetable Peels</string>
     <string name="item_fruit">Fruit</string>
     <string name="item_leaf">Leaf</string>
     <string name="item_grass">Grass</string>
     <string name="item_paper">Paper</string>
     <string name="item_tissue">Tissue</string>
     <string name="item_plastic_cup">Plastic Cup</string>
-    <string name="item_candy_wrapper">Candy Wrapper</string>
+    <string name="item_candy_wrapper">Snack Wrapper</string>
     <string name="item_styrofoam_box">Styrofoam Box</string>
+    <string name="item_can">Can</string>
+    <string name="item_vegetable">Vegetable</string>
     <string name="item_this_trash">This trash</string>
 
     <!-- Games -->

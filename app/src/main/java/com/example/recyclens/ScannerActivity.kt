@@ -1030,6 +1030,7 @@ class ScannerActivity : AppCompatActivity() {
     private fun getTagalogMaterialName(englishName: String): String? {
         val lower = englishName.lowercase()
         return when {
+            lower.contains("fruit and vegetable peels") || lower.contains("fruit vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
             lower.contains("banana") -> "Balat ng saging"
             lower.contains("apple core") || lower.contains("apple") -> "Ubod ng mansanas"
             lower.contains("mango peel") || lower.contains("mango") -> "Balat ng mangga"
@@ -1237,6 +1238,12 @@ class ScannerActivity : AppCompatActivity() {
         }
 
         when (lower) {
+            "fruit vegetable peels", "fruit and vegetable peels" -> {
+                list.add("Fruit and Vegetable Peels")
+                list.add("Fruit Vegetable Peels")
+                list.add("Vegetable Peels")
+                list.add("Peels")
+            }
             "snack wrapper" -> list.add("Candy Wrapper")
             "plastic wrapper" -> list.add("Candy Wrapper")
             "leaves" -> list.add("Leaf")
@@ -1251,8 +1258,8 @@ class ScannerActivity : AppCompatActivity() {
                 list.add("Bottle")
             }
             "tissue core" -> {
-                list.add("Tissue Core")
                 list.add("Tissue")
+                list.add("Tissue Core")
             }
             "tissue" -> list.add("Tissue")
             "styrofoam" -> {
@@ -1260,18 +1267,11 @@ class ScannerActivity : AppCompatActivity() {
                 list.add("Styrofoam Box")
                 list.add("Styrofoam Cup")
             }
-            "apple", "mango", "banana", "orange" -> {
-                list.add("Fruit")
-                if (lower == "banana") list.add("Banana Peel")
-                if (lower == "mango") list.add("Mango Peel")
-                if (lower == "apple") list.add("Apple Core")
-            }
             "styrofoam cup" -> {
                 list.add("Styrofoam Cup")
                 list.add("Styrofoam Box")
                 list.add("Styrofoam Tray")
             }
-            "tissue core" -> list.add("Tissue")
         }
 
         when {
@@ -1347,7 +1347,8 @@ class ScannerActivity : AppCompatActivity() {
             "pet bottle" -> "PET Bottle"
             "plastic cup" -> "Plastic Cup"
             "styrofoam cup", "styrofoam tray" -> "Styrofoam Cup/Tray"
-            "tissue core" -> "Tissue Core"
+            "tissue core" -> "Tissue"
+            "fruit vegetable peels", "fruit and vegetable peels" -> "Fruit and Vegetable Peels"
             "stationery paper", "bond paper", "intermediate pad", "construction paper", "paper" -> "Stationery Paper"
             "leaf", "leaves" -> "Leaves"
             "grass" -> "Grass"
@@ -1599,6 +1600,7 @@ class ScannerActivity : AppCompatActivity() {
     private fun mapToCategoryId(rawLabel: String): Int? {
         val label = rawLabel.trim().lowercase()
         return when {
+            label.contains("fruit vegetable peels") || label.contains("fruit and vegetable peels") -> 1
             label.contains("fruit") || label.contains("prutas") -> 1
             label.contains("vegetable") || label.contains("gulay") -> 1
             label.contains("paper") || label.contains("papel") -> 1

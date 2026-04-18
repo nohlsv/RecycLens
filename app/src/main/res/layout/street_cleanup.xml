@@ -20,16 +20,24 @@
 
     <TextView
         android:id="@+id/titleStreet"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/label_street_cleanup"
         android:textColor="#1E4D33"
-        android:textSize="22sp"
+        android:textSize="20sp"
         android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMaxTextSize="20sp"
+        android:autoSizeStepGranularity="1sp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toEndOf="@id/btnBackStreet"
+        app:layout_constraintEnd_toStartOf="@id/btnInfoStreet"
         app:layout_constraintBottom_toBottomOf="@id/btnBackStreet"
-        android:layout_marginStart="8dp"/>
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"/>
 
     <LinearLayout
         android:id="@+id/binRow"

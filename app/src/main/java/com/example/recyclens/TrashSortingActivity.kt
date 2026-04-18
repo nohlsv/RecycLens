@@ -79,9 +79,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = if (LanguagePrefs.isEnglish(this)) Locale.US else Locale.forLanguageTag("tl-PH")
-                tts?.setSpeechRate(1.0f)
-                tts?.setPitch(1.0f)
+                updateTtsLanguage()
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         MusicManager.pause()
@@ -171,8 +169,40 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         tvScore.text = getString(R.string.score_progress_format, score, totalToSort)
 
         if (ttsReady) {
-            tts?.language = if (isEnglish) Locale.US else Locale.forLanguageTag("tl-PH")
+            updateTtsLanguage()
         }
+    }
+
+    private fun updateTtsLanguage() {
+        val engine = tts ?: return
+        val isEnglish = LanguagePrefs.isEnglish(this)
+
+        var result = if (isEnglish) {
+            engine.setLanguage(Locale.US)
+        } else {
+            engine.setLanguage(Locale.forLanguageTag("fil-PH"))
+        }
+
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            result = if (isEnglish) {
+                engine.setLanguage(Locale.US)
+            } else {
+                engine.setLanguage(Locale.forLanguageTag("tl-PH"))
+            }
+        }
+
+        if (!isEnglish) {
+            val tagalogVoice = engine.voices?.firstOrNull { v ->
+                val lang = v.locale.language.lowercase()
+                lang == "fil" || lang == "tl"
+            }
+            if (tagalogVoice != null) {
+                engine.voice = tagalogVoice
+            }
+        }
+
+        engine.setSpeechRate(1.0f)
+        engine.setPitch(1.0f)
     }
 
     private fun applyLevelBadgeText() {
@@ -713,7 +743,28 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
             "ic_trash_bottle" -> getString(R.string.item_plastic_bottle)
             "ic_trash_wrapper" -> getString(R.string.item_candy_wrapper)
             "ic_trash_styro" -> getString(R.string.item_styrofoam_box)
-            else -> item.label
+            else -> translateArbitraryItemLabel(item.label)
+        }
+    }
+
+    private fun translateArbitraryItemLabel(raw: String): String {
+        if (LanguagePrefs.isEnglish(this)) return raw
+        val key = raw.lowercase()
+        return when {
+            key.contains("fruit vegetable peels") || key.contains("fruit and vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
+            key.contains("banana") -> getString(R.string.item_banana_peel)
+            key.contains("fruit") -> getString(R.string.item_fruit)
+            key.contains("vegetable") -> getString(R.string.item_vegetable)
+            key.contains("leaf") -> getString(R.string.item_leaf)
+            key.contains("grass") -> getString(R.string.item_grass)
+            key.contains("paper") -> getString(R.string.item_paper)
+            key.contains("tissue core") || key.contains("tissue") -> getString(R.string.item_tissue)
+            key.contains("plastic cup") || key.contains("cup") -> getString(R.string.item_plastic_cup)
+            key.contains("plastic bottle") || key.contains("bottle") -> getString(R.string.item_plastic_bottle)
+            key.contains("snack wrapper") || key.contains("candy wrapper") || key.contains("wrapper") -> getString(R.string.item_candy_wrapper)
+            key.contains("styro") || key.contains("foam") -> getString(R.string.item_styrofoam_box)
+            key.contains("can") -> getString(R.string.item_can)
+            else -> raw
         }
     }
 

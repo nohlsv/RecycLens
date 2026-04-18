@@ -2,6 +2,7 @@ ampalaya
 apple
 banana
 eggplant
+fruit-vegetable-peels
 grass
 kangkong
 leaves
@@ -13,5 +14,6 @@ pet-bottle
 plastic-cup
 plastic-wrapper
 styrofoam
+styrofoam-cup
 tissue
 tissue-core
