@@ -159,11 +159,16 @@
 
 ### New TODO from this re-check
 
-- [ ] Replace remaining hardcoded bilingual sample labels in `ScannerActivity.PresetSample` with `WasteCatalog` or `R.string` lookups to prevent drift.
-- [ ] Decide whether `scanner_header` in `values-tl/strings.xml` should be Filipino text instead of `Scanner Page`.
-- [ ] Decide whether `info_title` should remain bilingual (`Non-Biodegradable\nHindi Nabubulok`) or be Filipino-only in the Filipino locale.
-- [ ] Consolidate or retire legacy duplicate key families (`*_en`, `*_tl`) that are no longer used in active UI code.
-- [ ] Keep DB contract literals (`Street Cleanup`, `Trash Sorting`, `Easy/Medium/Hard`) centralized in one helper/constant owner so they do not drift across files.
+- [x] Replace remaining hardcoded bilingual sample labels in `ScannerActivity.PresetSample` with `WasteCatalog` or `R.string` lookups to prevent drift.
+  `showPresetPicker()` now resolves labels via `WasteCatalog.localizedLabelForResName(...)` with one fallback path.
+- [x] Decide whether `scanner_header` in `values-tl/strings.xml` should be Filipino text instead of `Scanner Page`.
+  Set to `Pahina ng Scanner` in Filipino locale resources.
+- [x] Decide whether `info_title` should remain bilingual (`Non-Biodegradable\nHindi Nabubulok`) or be Filipino-only in the Filipino locale.
+  Set Filipino locale value to Filipino-only (`Hindi Nabubulok`) in `values-tl/strings.xml`.
+- [x] Consolidate or retire legacy duplicate key families (`*_en`, `*_tl`) that are no longer used in active UI code.
+  Retired unused `_en` / `_tl` duplicates in both locale files; retained only `label_en` / `label_tl` used by the bottom-bar language toggle.
+- [x] Keep DB contract literals (`Street Cleanup`, `Trash Sorting`, `Easy/Medium/Hard`) centralized in one helper/constant owner so they do not drift across files.
+  Added `GameDbContract` and switched game update/query call sites to use shared constants.
 
 ## Anti-Hallucination / Anti-Drift Guardrails
 

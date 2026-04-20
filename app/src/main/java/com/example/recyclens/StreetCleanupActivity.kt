@@ -19,6 +19,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
+import com.example.recyclens.data.db.GameDbContract
 import com.example.recyclens.data.db.GameDatabase
 import java.util.Locale
 import kotlin.random.Random
@@ -364,7 +365,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
             val g = db.rawQuery(
                 "SELECT game_id FROM game WHERE game_title=? AND game_level=? LIMIT 1",
-                arrayOf("Street Cleanup", levelName)
+                arrayOf(GameDbContract.GAME_TITLE_STREET_CLEANUP, levelName)
             )
             if (g.moveToFirst()) {
                 gameId = g.getInt(0)
@@ -697,7 +698,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 "game",
                 upd,
                 "game_title=? AND game_level=?",
-                arrayOf("Street Cleanup", levelNameForDb(level))
+                arrayOf(GameDbContract.GAME_TITLE_STREET_CLEANUP, levelNameForDb(level))
             )
 
             db.close()
@@ -978,11 +979,6 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private fun trf(resId: Int, vararg args: Any): String = getString(resId, *args)
 
     private fun levelNameForDb(level: Int): String {
-        return when (level) {
-            1 -> "Easy"
-            2 -> "Medium"
-            3 -> "Hard"
-            else -> "Easy"
-        }
+        return GameDbContract.levelNameForLevelNumber(level)
     }
 }

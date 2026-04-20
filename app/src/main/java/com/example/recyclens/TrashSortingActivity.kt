@@ -19,6 +19,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
+import com.example.recyclens.data.db.GameDbContract
 import com.example.recyclens.data.db.GameDatabase
 import java.util.Locale
 
@@ -686,12 +687,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
             val rowId = db.insert("game_result", null, values)
             Log.d("TrashSortingActivity", "Inserted row into game_result, rowId=$rowId")
 
-            val levelName = when (selectedLevel) {
-                1 -> "Easy"
-                2 -> "Medium"
-                3 -> "Hard"
-                else -> "Easy"
-            }
+            val levelName = GameDbContract.levelNameForLevelNumber(selectedLevel)
             val upd = ContentValues().apply {
                 put("current_score", correct)
             }
@@ -699,7 +695,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 "game",
                 upd,
                 "game_title=? AND game_level=?",
-                arrayOf("Trash Sorting", levelName)
+                arrayOf(GameDbContract.GAME_TITLE_TRASH_SORTING, levelName)
             )
             Log.d("TrashSortingActivity", "Updated game table rows=$updatedRows")
 

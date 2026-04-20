@@ -103,21 +103,20 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private data class PresetSample(
         val label: String,
         val drawableRes: Int,
-        val nameEn: String,
-        val nameTl: String
+        val resName: String
     )
 
     private val presetSamples = listOf(
-        PresetSample("banana", R.drawable.ic_trash_banana, "Banana Peel", "Balat ng saging"),
-        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Bottle", "Bote"),
-        PresetSample("apple", R.drawable.ic_trash_fruit, "Fruit", "Prutas"),
-        PresetSample("grass", R.drawable.ic_trash_grass, "Grass", "Damo"),
-        PresetSample("leaves", R.drawable.ic_trash_leaf, "Leaf", "Dahon"),
-        PresetSample("paper", R.drawable.ic_trash_paper, "Stationery Paper", "Papel"),
-        PresetSample("plastic-cup", R.drawable.ic_trash_plastic_cup, "Plastic Cup", "Plastic na baso"),
-        PresetSample("styrofoam", R.drawable.ic_trash_styro, "Styrofoam Box", "Styro na lalagyan"),
-        PresetSample("tissue", R.drawable.ic_trash_tissue, "Tissue", "Tisyu"),
-        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Candy Wrapper", "Balot ng kendi")
+        PresetSample("banana", R.drawable.ic_trash_banana, "ic_trash_banana"),
+        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "ic_trash_bottle"),
+        PresetSample("apple", R.drawable.ic_trash_fruit, "ic_trash_fruit"),
+        PresetSample("grass", R.drawable.ic_trash_grass, "ic_trash_grass"),
+        PresetSample("leaves", R.drawable.ic_trash_leaf, "ic_trash_leaf"),
+        PresetSample("paper", R.drawable.ic_trash_paper, "ic_trash_paper"),
+        PresetSample("plastic-cup", R.drawable.ic_trash_plastic_cup, "ic_trash_plastic_cup"),
+        PresetSample("styrofoam", R.drawable.ic_trash_styro, "ic_trash_styro"),
+        PresetSample("tissue", R.drawable.ic_trash_tissue, "ic_trash_tissue"),
+        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "ic_trash_wrapper")
     )
 
     companion object {
@@ -504,7 +503,8 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private fun showPresetPicker() {
         val labels = presetSamples.map { sample ->
-            if (isEnglish) sample.nameEn else sample.nameTl
+            WasteCatalog.localizedLabelForResName(this, sample.resName)
+                ?: humanReadableLabel(sample.label)
         }
 
         val rowsContainer = LinearLayout(this).apply {
