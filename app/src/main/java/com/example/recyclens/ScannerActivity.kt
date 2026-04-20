@@ -26,7 +26,6 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RelativeLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +40,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
+import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
 import com.example.recyclens.data.model.WasteCategory
 import com.example.recyclens.data.model.WasteMaterial
@@ -60,7 +60,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
-class ScannerActivity : AppCompatActivity() {
+class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private lateinit var topCard: FrameLayout
     private lateinit var previewView: PreviewView
@@ -71,13 +71,7 @@ class ScannerActivity : AppCompatActivity() {
     private lateinit var btnCamera: ImageButton
     private lateinit var btnGallery: ImageButton
     private lateinit var btnPreset: ImageButton
-    private lateinit var navScan: ImageButton
-    private lateinit var navPlay: ImageView
-    private lateinit var langToggle: RelativeLayout
-    private lateinit var langText: TextView
     private lateinit var btnSpeaker: ImageButton
-    private lateinit var labelScan: TextView
-    private lateinit var labelPlay: TextView
 
     private lateinit var cameraExecutor: ExecutorService
     private var imageCapture: ImageCapture? = null
@@ -115,15 +109,15 @@ class ScannerActivity : AppCompatActivity() {
 
     private val presetSamples = listOf(
         PresetSample("banana", R.drawable.ic_trash_banana, "Banana Peel", "Balat ng saging"),
-        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Plastic Bottle", "Boteng Plastik"),
-        PresetSample("apple", R.drawable.ic_trash_fruit, "Apple Core", "Ubod ng mansanas"),
+        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Bottle", "Bote"),
+        PresetSample("apple", R.drawable.ic_trash_fruit, "Fruit", "Prutas"),
         PresetSample("grass", R.drawable.ic_trash_grass, "Grass", "Damo"),
-        PresetSample("leaves", R.drawable.ic_trash_leaf, "Leaves", "Dahon"),
-        PresetSample("paper", R.drawable.ic_trash_paper, "Stationery Paper", "Papel pang-sulat"),
+        PresetSample("leaves", R.drawable.ic_trash_leaf, "Leaf", "Dahon"),
+        PresetSample("paper", R.drawable.ic_trash_paper, "Stationery Paper", "Papel"),
         PresetSample("plastic-cup", R.drawable.ic_trash_plastic_cup, "Plastic Cup", "Plastic na baso"),
-        PresetSample("styrofoam", R.drawable.ic_trash_styro, "Styrofoam Tray", "Styrofoam na lalagyan"),
+        PresetSample("styrofoam", R.drawable.ic_trash_styro, "Styrofoam Box", "Styro na lalagyan"),
         PresetSample("tissue", R.drawable.ic_trash_tissue, "Tissue", "Tisyu"),
-        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Snack Wrapper", "Balat ng chichirya")
+        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Candy Wrapper", "Balot ng kendi")
     )
 
     companion object {
@@ -189,13 +183,7 @@ class ScannerActivity : AppCompatActivity() {
         btnCamera = findViewById(R.id.btnCamera)
         btnGallery = findViewById(R.id.btnGallery)
         btnPreset = findViewById(R.id.btnPreset)
-        navScan = findViewById(R.id.navScan)
-        navPlay = findViewById(R.id.navPlay)
-        langToggle = findViewById(R.id.langToggle)
-        langText = findViewById(R.id.langText)
         btnSpeaker = findViewById(R.id.btnSpeaker)
-        labelScan = findViewById(R.id.labelScan)
-        labelPlay = findViewById(R.id.labelPlay)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -250,8 +238,7 @@ class ScannerActivity : AppCompatActivity() {
 
         initModels()
         ensureCameraReady()
-        setupBottomBar(BottomBar.Tab.PLAY)
-        setupLanguageToggle()
+        setupBottomBar(BottomBar.Tab.SCAN)
         setupButtons()
 
         showLivePreview()
@@ -259,8 +246,15 @@ class ScannerActivity : AppCompatActivity() {
         RecyclensEntryAnimator.play(this)
     }
 
+    override fun onLanguageChanged() {
+        isEnglish = LanguagePrefs.isEnglish(this)
+        renderPredictionOrIdle()
+        updateTtsLanguage()
+    }
+
     override fun onResume() {
         super.onResume()
+        isEnglish = LanguagePrefs.isEnglish(this)
         if (mediaPlayer != null && mediaPlayer?.isPlaying == false) mediaPlayer?.start()
     }
 
@@ -340,23 +334,6 @@ class ScannerActivity : AppCompatActivity() {
         infoTitle.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
         infoText.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
         return parts.joinToString(". ")
-    }
-
-    private fun setupLanguageToggle() {
-        updateLanguageTexts()
-        langToggle.setOnClickListener {
-            isEnglish = LanguagePrefs.toggle(this)
-            LanguagePrefs.applyLocale(this)
-            updateLanguageTexts()
-            renderPredictionOrIdle()
-            updateTtsLanguage()
-        }
-    }
-
-    private fun updateLanguageTexts() {
-        langText.text = getString(if (isEnglish) R.string.label_en else R.string.label_tl)
-        labelScan.text = getString(R.string.label_scan_trash)
-        labelPlay.text = getString(R.string.label_play_games)
     }
 
     private fun updateTtsLanguage() {
@@ -1010,29 +987,6 @@ class ScannerActivity : AppCompatActivity() {
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
 
-    private fun getTagalogMaterialName(englishName: String): String? {
-        val lower = englishName.lowercase()
-        return when {
-            lower.contains("fruit and vegetable peels") || lower.contains("fruit vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
-            lower.contains("banana") -> getString(R.string.item_banana_peel)
-            lower.contains("apple core") || lower.contains("apple") -> "Ubod ng mansanas"
-            lower.contains("mango peel") || lower.contains("mango") -> "Balat ng mangga"
-            lower.contains("plastic bottle") || (lower.contains("bottle") && lower.contains("plastic")) -> getString(R.string.item_plastic_bottle)
-            lower.contains("plastic cup") -> getString(R.string.item_plastic_cup)
-            lower.contains("pet bottle") -> getString(R.string.item_plastic_bottle)
-            lower.contains("snack wrapper") -> getString(R.string.item_candy_wrapper)
-            lower.contains("stationery paper") -> getString(R.string.item_paper)
-            lower.contains("tissue core") -> "Gitna ng tisyu"
-            lower.contains("tissue") -> getString(R.string.item_tissue)
-            lower.contains("grass") -> getString(R.string.item_grass)
-            lower.contains("leaf") || lower.contains("leaves") -> getString(R.string.item_leaf)
-            lower.contains("styrofoam") || lower.contains("styro") || lower.contains("tray") -> getString(R.string.item_styrofoam_box)
-            lower.contains("wrapper") -> getString(R.string.item_candy_wrapper)
-            lower.contains("can") || lower.contains("lata") -> getString(R.string.item_can)
-            else -> null
-        }
-    }
-
     private fun renderPredictionOrIdle() {
         val pred = lastPrediction
         if (pred == null) {
@@ -1048,6 +1002,7 @@ class ScannerActivity : AppCompatActivity() {
         val material = lastMaterial
         val category = lastCategory
         val displayLabel = humanReadableLabel(pred.label)
+        val predictedSpec = WasteCatalog.findByPredictionLabel(pred.label)
 
         val materialNameEn: String
         val materialNameTl: String
@@ -1062,7 +1017,8 @@ class ScannerActivity : AppCompatActivity() {
             materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: displayLabel
             materialNameTl =
                 material.nameTl?.takeIf { it.isNotBlank() }
-                    ?: getTagalogMaterialName(materialNameEn)
+                    ?: WasteCatalog.filipinoNameForEnglish(materialNameEn)
+                    ?: WasteCatalog.localizedLabel(this, predictedSpec)
                             ?: materialNameEn
 
             categoryId = material.categoryId
@@ -1078,10 +1034,13 @@ class ScannerActivity : AppCompatActivity() {
             categoryDescTl =
                 category?.descriptionTl ?: if (isNonBio) getString(R.string.scanner_itapon_blue) else getString(R.string.scanner_itapon_green)
         } else {
-            materialNameEn = displayLabel
-            materialNameTl = getTagalogMaterialName(materialNameEn) ?: materialNameEn
+            materialNameEn = WasteCatalog.englishNameForAnyName(displayLabel) ?: displayLabel
+            materialNameTl =
+                WasteCatalog.filipinoNameForEnglish(materialNameEn)
+                    ?: WasteCatalog.localizedLabel(this, predictedSpec)
+                    ?: materialNameEn
 
-            val guessedCategoryId = mapToCategoryId(pred.label) ?: 0
+            val guessedCategoryId = WasteCatalog.categoryIdForLabel(pred.label) ?: mapToCategoryId(pred.label) ?: 0
             categoryId = guessedCategoryId
             isNonBio = (categoryId == 2)
 
@@ -1214,129 +1173,83 @@ class ScannerActivity : AppCompatActivity() {
             list.add(humanReadableLabel(label))
         }
 
+        WasteCatalog.findByPredictionLabel(rawLabel)?.let { spec ->
+            list.add(spec.dbNameEn)
+            list.add(spec.dbNameTl)
+        }
+
         when (lower) {
             "fruit vegetable peels", "fruit and vegetable peels" -> {
                 list.add("Fruit and Vegetable Peels")
-                list.add("Fruit Vegetable Peels")
-                list.add("Vegetable Peels")
-                list.add("Peels")
             }
-            "snack wrapper" -> list.add("Candy Wrapper")
-            "plastic wrapper" -> list.add("Candy Wrapper")
-            "leaves" -> list.add("Leaf")
-            "leaf" -> list.add("Leaf")
-            "bottle" -> {
-                list.add("Bottle")
-                list.add("Plastic Bottle")
-            }
-            "pet bottle" -> {
-                list.add("PET Bottle")
-                list.add("Plastic Bottle")
-                list.add("Bottle")
-            }
+            "snack wrapper", "plastic wrapper" -> list.add("Candy Wrapper")
+            "leaves", "leaf" -> list.add("Leaf")
+            "bottle", "pet bottle" -> list.add("Bottle")
             "tissue core" -> {
                 list.add("Tissue")
-                list.add("Tissue Core")
             }
             "tissue" -> list.add("Tissue")
             "styrofoam" -> {
-                list.add("Styrofoam Tray")
                 list.add("Styrofoam Box")
-                list.add("Styrofoam Cup")
             }
-            "styrofoam cup" -> {
-                list.add("Styrofoam Cup")
-                list.add("Styrofoam Box")
-                list.add("Styrofoam Tray")
-            }
+            "styrofoam cup" -> list.add("Styrofoam Box")
         }
 
         when {
             lower.contains("banana") -> {
                 list.add("Banana Peel")
-                list.add("Banana peels")
             }
 
-            lower.contains("apple") -> {
-                list.add("Apple Core")
-                list.add("Apple")
-            }
+            lower.contains("apple") -> list.add("Fruit")
 
-            lower.contains("mango") -> {
-                list.add("Mango Peel")
-                list.add("Mango")
-            }
+            lower.contains("mango") -> list.add("Fruit")
 
             lower.contains("plastic cup") -> list.add("Plastic Cup")
-            lower.contains("bottle") -> list.add("Plastic Bottle")
-            lower.contains("tissue") -> {
-                list.add("Tissue Core")
-                list.add("Tissue")
-                list.add("Tissue Roll")
-            }
+            lower.contains("bottle") -> list.add("Bottle")
+            lower.contains("tissue") -> list.add("Tissue")
 
             lower.contains("grass") -> {
                 list.add("Grass")
                 list.add("Bermuda Grass")
             }
 
-            lower.contains("leaf") || lower.contains("leaves") -> list.add("Leaves")
-            lower.contains("styro") || lower.contains("tray") -> {
-                list.add("Styrofoam Cup")
-                list.add("Styrofoam Tray")
-                list.add("Styrofoam Box")
-            }
+            lower.contains("leaf") || lower.contains("leaves") -> list.add("Leaf")
+            lower.contains("styro") || lower.contains("tray") -> list.add("Styrofoam Box")
 
-            lower.contains("ampalaya") -> list.add("Ampalaya")
-            lower.contains("kangkong") -> list.add("Kangkong")
-            lower.contains("okra") -> list.add("Okra")
-            lower.contains("eggplant") -> {
-                list.add("Eggplant")
-                list.add("Talong")
-            }
+            lower.contains("ampalaya") -> list.add("Vegetable")
+            lower.contains("kangkong") -> list.add("Vegetable")
+            lower.contains("okra") -> list.add("Vegetable")
+            lower.contains("eggplant") -> list.add("Vegetable")
             lower.contains("orange") -> list.add("Fruit")
-            lower.contains("pet bottle") -> {
-                list.add("PET Bottle")
-                list.add("Bottle")
-                list.add("Plastic Bottle")
-            }
-            lower.contains("styrofoam cup") -> {
-                list.add("Styrofoam Cup")
-                list.add("Styrofoam Box")
-                list.add("Styrofoam Tray")
-            }
+            lower.contains("pet bottle") -> list.add("Bottle")
+            lower.contains("styrofoam cup") -> list.add("Styrofoam Box")
             lower.contains("tissue core") -> list.add("Tissue")
         }
 
-        // Generic vegetable fallback to existing DB entry
         if (lower in listOf("ampalaya", "okra", "eggplant", "kangkong")) {
-            list.add("Fruit")
+            list.add("Vegetable")
         }
 
         return list.distinct()
     }
 
     private fun humanReadableLabel(rawLabel: String): String {
+        WasteCatalog.findByPredictionLabel(rawLabel)?.let { return it.dbNameEn }
+
         val normalized = rawLabel.trim().lowercase().replace("_", " ").replace("-", " ")
 
         return when (normalized) {
-            "plastic wrapper", "wrapper" -> "Snack Wrapper"
-            "pet bottle" -> "PET Bottle"
+            "plastic wrapper", "wrapper" -> "Candy Wrapper"
+            "pet bottle" -> "Bottle"
             "plastic cup" -> "Plastic Cup"
-            "styrofoam cup", "styrofoam tray" -> "Styrofoam Cup/Tray"
+            "styrofoam cup", "styrofoam tray" -> "Styrofoam Box"
             "tissue core" -> "Tissue"
             "fruit vegetable peels", "fruit and vegetable peels" -> "Fruit and Vegetable Peels"
             "stationery paper", "bond paper", "intermediate pad", "construction paper", "paper" -> "Stationery Paper"
-            "leaf", "leaves" -> "Leaves"
+            "leaf", "leaves" -> "Leaf"
             "grass" -> "Grass"
-            "kangkong" -> "Kangkong Stem"
-            "eggplant" -> "Eggplant"
-            "okra" -> "Okra"
-            "ampalaya" -> "Ampalaya"
-            "apple" -> "Apple"
-            "banana" -> "Banana"
-            "orange" -> "Orange"
-            "mango" -> "Mango"
+            "kangkong", "eggplant", "okra", "ampalaya" -> "Vegetable"
+            "apple", "banana", "orange", "mango" -> "Fruit"
             else -> normalized.split(Regex("\\s+")).joinToString(" ") { word ->
                 word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
             }
@@ -1575,6 +1488,8 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun mapToCategoryId(rawLabel: String): Int? {
+        WasteCatalog.categoryIdForLabel(rawLabel)?.let { return it }
+
         val label = rawLabel.trim().lowercase()
         return when {
             label.contains("fruit vegetable peels") || label.contains("fruit and vegetable peels") -> 1

@@ -1,63 +1,61 @@
 package com.example.recyclens.data.db
 
 import android.content.Context
-import android.database.Cursor
 
 data class Game(
     val id: Long,
-    val key: String,
-    val name: String,
-    val description: String?
-)
-
-data class GameLevel(
-    val id: Long,
-    val gameId: Long,
-    val levelNumber: Int,
-    val levelName: String
+    val title: String,
+    val level: String?,
+    val timer: Int?,
+    val currentScore: Int?
 )
 
 class GameRepository(ctx: Context) {
 
-    // Use the singleton DatabaseHelper
-    private val db = DatabaseHelper.getInstance(ctx).readableDatabase
+    private val context = ctx.applicationContext
 
-    fun getGameByKey(key: String): Game? {
+    fun getGame(title: String, level: String): Game? {
         var result: Game? = null
 
-        db.rawQuery(
-            "SELECT game_id, game_key, game_name, description FROM game WHERE game_key = ?",
-            arrayOf(key)
-        ).use { cursor: Cursor ->
-            if (cursor.moveToFirst()) {
-                result = Game(
-                    id = cursor.getLong(0),
-                    key = cursor.getString(1),
-                    name = cursor.getString(2),
-                    description = cursor.getString(3)
-                )
+        GameDatabase.open(context).use { db ->
+            db.rawQuery(
+                "SELECT game_id, game_title, game_level, game_timer, current_score FROM game WHERE game_title = ? AND game_level = ? LIMIT 1",
+                arrayOf(title, level)
+            ).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    result = Game(
+                        id = cursor.getLong(0),
+                        title = cursor.getString(1),
+                        level = cursor.getString(2),
+                        timer = cursor.getInt(3).takeIf { !cursor.isNull(3) },
+                        currentScore = cursor.getInt(4).takeIf { !cursor.isNull(4) }
+                    )
+                }
             }
         }
 
         return result
     }
 
-    fun getLevelsForGame(gameId: Long): List<GameLevel> {
-        val list = mutableListOf<GameLevel>()
+    fun getGamesByTitle(title: String): List<Game> {
+        val list = mutableListOf<Game>()
 
-        db.rawQuery(
-            "SELECT level_id, game_id, level_number, level_name FROM game_level WHERE game_id = ? ORDER BY level_number",
-            arrayOf(gameId.toString())
-        ).use { cursor: Cursor ->
-            while (cursor.moveToNext()) {
-                list.add(
-                    GameLevel(
-                        id = cursor.getLong(0),
-                        gameId = cursor.getLong(1),
-                        levelNumber = cursor.getInt(2),
-                        levelName = cursor.getString(3)
+        GameDatabase.open(context).use { db ->
+            db.rawQuery(
+                "SELECT game_id, game_title, game_level, game_timer, current_score FROM game WHERE game_title = ? ORDER BY game_id",
+                arrayOf(title)
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    list.add(
+                        Game(
+                            id = cursor.getLong(0),
+                            title = cursor.getString(1),
+                            level = cursor.getString(2),
+                            timer = cursor.getInt(3).takeIf { !cursor.isNull(3) },
+                            currentScore = cursor.getInt(4).takeIf { !cursor.isNull(4) }
+                        )
                     )
-                )
+                }
             }
         }
 

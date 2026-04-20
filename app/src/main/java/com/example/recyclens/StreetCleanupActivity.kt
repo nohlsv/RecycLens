@@ -17,7 +17,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
+import com.example.recyclens.data.db.GameDatabase
 import java.util.Locale
 import kotlin.random.Random
 
@@ -55,8 +57,6 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private val startRoundFallback = Runnable {
         beginRoundIfNeeded()
     }
-
-    private val dbName = "recyclensdb.db"
 
     private data class WasteItem(
         val resName: String,
@@ -298,16 +298,16 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private fun loadItemsFromDb(): List<WasteItem> {
         val map = LinkedHashMap<String, WasteItem>()
         try {
-            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val db = GameDatabase.open(this)
             val sql = """
-                SELECT wm.image_path, wc.name_en
+                SELECT wm.image_path, wc.name_en AS category_name_en
                 FROM waste_material wm
                 JOIN waste_category wc ON wm.category_id = wc.category_id
                 WHERE wm.image_path IS NOT NULL AND wm.image_path <> ''
             """.trimIndent()
             val c = db.rawQuery(sql, null)
             val pathIdx = c.getColumnIndex("image_path")
-            val nameIdx = c.getColumnIndex("name")
+            val nameIdx = c.getColumnIndex("category_name_en")
             while (c.moveToNext()) {
                 val path = c.getString(pathIdx) ?: continue
                 if (map.containsKey(path)) continue
@@ -346,7 +346,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
         var timerSeconds = 0
         var gameId: Int? = null
         try {
-            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val db = GameDatabase.open(this)
             val offset = (level - 1).coerceAtLeast(0)
             val c = db.rawQuery(
                 "SELECT street_icon, trash_count, timer FROM street_cleanup_game ORDER BY rowid LIMIT 1 OFFSET ?",
@@ -670,7 +670,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private fun saveGameResultToDb(totalScore: Int, correct: Int, wrong: Int) {
         try {
-            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val db = GameDatabase.open(this)
             db.execSQL(
                 """
                 CREATE TABLE IF NOT EXISTS game_result(
@@ -823,39 +823,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun getTrashDisplayName(item: WasteItem): String {
-        return when (item.resName) {
-            "ic_trash_banana" -> getString(R.string.item_banana_peel)
-            "ic_trash_fruit" -> getString(R.string.item_fruit)
-            "ic_trash_leaf" -> getString(R.string.item_leaf)
-            "ic_trash_grass" -> getString(R.string.item_grass)
-            "ic_trash_paper" -> getString(R.string.item_paper)
-            "ic_trash_tissue" -> getString(R.string.item_tissue)
-            "ic_trash_plastic_cup" -> getString(R.string.item_plastic_cup)
-            "ic_trash_bottle" -> getString(R.string.item_plastic_bottle)
-            "ic_trash_wrapper" -> getString(R.string.item_candy_wrapper)
-            "ic_trash_styro" -> getString(R.string.item_styrofoam_box)
-            else -> localizedFromKey(item.resName)
-        }
-    }
-
-    private fun localizedFromKey(raw: String): String {
-        val key = raw.lowercase()
-        return when {
-            key.contains("fruit vegetable peels") || key.contains("fruit and vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
-            key.contains("banana") -> getString(R.string.item_banana_peel)
-            key.contains("fruit") -> getString(R.string.item_fruit)
-            key.contains("vegetable") -> getString(R.string.item_vegetable)
-            key.contains("leaf") -> getString(R.string.item_leaf)
-            key.contains("grass") -> getString(R.string.item_grass)
-            key.contains("paper") -> getString(R.string.item_paper)
-            key.contains("tissue core") || key.contains("tissue") -> getString(R.string.item_tissue)
-            key.contains("plastic_cup") || key.contains("cup") -> getString(R.string.item_plastic_cup)
-            key.contains("bottle") -> getString(R.string.item_plastic_bottle)
-            key.contains("wrapper") -> getString(R.string.item_candy_wrapper)
-            key.contains("styro") || key.contains("foam") -> getString(R.string.item_styrofoam_box)
-            key.contains("can") -> getString(R.string.item_can)
-            else -> getString(R.string.item_this_trash)
-        }
+        return WasteCatalog.localizedLabelForResName(this, item.resName)
+            ?: getString(R.string.item_this_trash)
     }
 
     private fun getCorrectBinText(item: WasteItem): String {

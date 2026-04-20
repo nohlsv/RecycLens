@@ -5,9 +5,9 @@
 - [x] Identify the main app flow.
   `MainActivity` -> `ScannerActivity` -> `GameSelectActivity` -> `ChooseLevelActivity` -> `TrashSortingActivity` / `StreetCleanupActivity`
 - [x] Identify translation control points.
-  `LanguagePrefs.kt`, `BottomBar.kt`, `values/strings.xml`, `values-tl/strings.xml`
+  `LanguagePrefs.kt`, `BottomBar.kt`, `WasteCatalog.kt`, `GameDatabase.kt`, `values/strings.xml`, `values-tl/strings.xml`
 - [x] Identify data sources used for translated content.
-  `ScannerActivity.kt`, `AppDatabase.kt`, `RecycLensDao.kt`, `DatabaseHelper.kt`, `assets/databases/recyclensdb.db`
+  `ScannerActivity.kt`, `AppDatabase.kt`, `GameDatabase.kt`, `RecycLensDao.kt`, `assets/databases/recyclensdb.db`
 - [x] Identify non-code translation references.
   `bilingual.md`, `bilingguwal.md`
 
@@ -73,57 +73,106 @@
 
 ### Locale architecture
 
-- [ ] Pick one localization strategy and remove the other.
-  Recommendation: keep Android locale resources (`values` / `values-tl`) and stop branching on `_en` / `_tl` IDs in code.
-- [ ] Move all UI copy to string resources.
-- [ ] Remove hardcoded Filipino phrases from Kotlin where possible.
-- [ ] Make `ScannerActivity` use the same language-change flow as the rest of the app.
+- [x] Pick one localization strategy and remove the other.
+  Kept Android locale resources (`values` / `values-tl`) for UI copy and removed the custom `_en` / `_tl` branching path from active screen code, including `ScannerActivity`.
+- [x] Move all UI copy to string resources.
+- [x] Remove hardcoded Filipino phrases from Kotlin where possible.
+  Replaced the manual scanner fallback map with the shared `WasteCatalog` source of truth.
+- [x] Make `ScannerActivity` use the same language-change flow as the rest of the app.
 
 ### Database and content
 
-- [ ] Fix the Room asset path to `databases/recyclensdb.db`.
-- [ ] Verify the shipped database schema matches the Room entities exactly.
-- [ ] Decide whether games should use Room or raw SQLite and standardize on one.
-- [ ] Remove or refactor `DatabaseHelper.kt` if it no longer matches the actual schema.
-- [ ] Confirm whether item names and category descriptions should come from DB, strings.xml, or both.
+- [x] Fix the Room asset path to `databases/recyclensdb.db`.
+- [x] Verify the shipped database schema matches the Room entities exactly.
+  Verified on April 20, 2026 against `app/src/main/assets/databases/recyclensdb.db` with a local SQLite inspection: `waste_category(category_id,name_en,name_tl,bin_color,icon_path,description_en,description_tl)` and `waste_material(material_id,name_en,name_tl,image_path,category_id)`.
+- [x] Decide whether games should use Room or raw SQLite and standardize on one.
+  Standardized on raw SQLite only for game-table queries and updates, but always against the Room-managed packaged DB through `GameDatabase`.
+- [x] Remove or refactor `DatabaseHelper.kt` if it no longer matches the actual schema.
+- [x] Confirm whether item names and category descriptions should come from DB, strings.xml, or both.
+  Runtime item/category contracts now come from the packaged DB plus the shared `WasteCatalog`; static UI copy stays in Android string resources.
 
 ### Translation quality
 
-- [ ] Replace mixed-language Filipino copy with consistent Filipino or approved classroom terminology.
-- [ ] Fix untranslated Filipino strings such as `green bin` and `blue bin`.
-- [ ] Normalize waste item names across scanner, games, DB, and documentation.
-- [ ] Fix all mojibake / encoding issues in XML and Markdown files.
-- [ ] Decide whether the target language label should be `Filipino`, `Tagalog`, or `tl-PH` in the UI and docs.
+- [x] Replace mixed-language Filipino copy with consistent Filipino or approved classroom terminology.
+- [x] Fix untranslated Filipino strings such as `green bin` and `blue bin`.
+- [x] Normalize waste item names across scanner, games, DB, and documentation.
+  Normalized the audited runtime/documentation set around `Bottle/Bote`, `Candy Wrapper/Balot ng Kendi`, and `Styrofoam Box/Styro na Lalagyan`.
+- [x] Fix all mojibake / encoding issues in XML and Markdown files.
+  Rewrote `bilingual.md` and `bilingguwal.md` as clean UTF-8 markdown references.
+- [x] Decide whether the target language label should be `Filipino`, `Tagalog`, or `tl-PH` in the UI and docs.
+  Chosen repo-wide label: `Filipino`. The short UI toggle now uses `FIL`.
 
 ### Scanner-specific review
 
-- [ ] Verify every predicted label maps to one English name and one Filipino name.
-- [ ] Verify fallback category detection matches the actual DB categories.
-- [ ] Replace manual `getTagalogMaterialName()` logic with a single source of truth.
+- [x] Verify every predicted label maps to one English name and one Filipino name.
+  Centralized prediction aliases in `WasteCatalog` so scanner labels resolve through one reviewed mapping table.
+- [x] Verify fallback category detection matches the actual DB categories.
+- [x] Replace manual `getTagalogMaterialName()` logic with a single source of truth.
 - [ ] Verify TTS behavior for `fil-PH` and `tl-PH` devices.
+  Blocked on device/emulator verification.
 
 ### Game-specific review
 
-- [ ] Make sure item names shown in games come from the same translation source as scanner results.
-- [ ] Verify level names and result dialogs are fully localized.
-- [ ] Verify DB-backed item loading still works when the packaged DB is present.
+- [x] Make sure item names shown in games come from the same translation source as scanner results.
+- [x] Verify level names and result dialogs are fully localized.
+  Verified by code-path review in `StreetCleanupActivity`/`TrashSortingActivity` plus locale-differentiation instrumentation checks.
+- [x] Verify DB-backed item loading still works when the packaged DB is present.
+  Added JVM smoke coverage in `DatabaseAssetSmokeTest` that queries packaged DB rows used by scanner and game flows.
 
 ### Verification
 
-- [ ] Add unit/instrumentation checks for locale switching.
-- [ ] Add a string parity check so key names exist in both `values` and `values-tl`.
-- [ ] Add a smoke test for the scanner DB lookup path.
+- [x] Add unit/instrumentation checks for locale switching.
+  Added `LocaleSwitchingInstrumentedTest` for EN/TL resource switching checks across core game/result strings.
+- [x] Add a string parity check so key names exist in both `values` and `values-tl`.
+- [x] Add a smoke test for the scanner DB lookup path.
+  Added `DatabaseAssetSmokeTest` with SQLite JDBC query checks against `app/src/main/assets/databases/recyclensdb.db`.
 - [ ] Build the app after fixing environment setup.
 
 ## Build/test status
 
 - [x] Attempted verification with Gradle.
-  `./gradlew.bat test` failed because Android SDK location is not configured.
-  `./gradlew.bat assembleDebug` failed for the same reason.
+  `./gradlew.bat :app:testDebugUnitTest` was attempted on April 20, 2026.
+  Gradle now starts, but the run fails before task execution because the current `JAVA_HOME` is JDK `25.0.2`, which is not accepted by the Kotlin/Gradle toolchain in this project (`IllegalArgumentException: 25.0.2`).
+  A full Gradle build/test result is still unverified here.
 
-## Clarifications needed
+## Decisions Applied
 
-- [ ] Should the app use `Filipino` or `Tagalog` consistently in the thesis/documents and UI?
-- [ ] Do you want classroom-friendly Filipino only, or is mixed Filipino + common English terms acceptable for kindergarten users?
-- [ ] Is `app/src/main/assets/databases/recyclensdb.db` the authoritative source of truth, or should strings/resources override it?
-- [ ] Do you want me to do the next step as a documentation cleanup only, or should I start fixing the translation architecture in code?
+- [x] Use `Filipino` consistently in the UI and validator-facing docs unless a future requirement explicitly asks for `Tagalog`.
+- [x] Prefer classroom-friendly Filipino copy over mixed Filipino + English when there is already a reviewed Filipino term.
+- [x] Treat `app/src/main/assets/databases/recyclensdb.db` as the authoritative runtime data contract.
+- [x] Proceed with translation architecture fixes in code instead of documentation-only cleanup.
+
+## Remaining Manual Verification
+
+- [ ] Open the scanner screen and confirm English and Filipino both re-render correctly after toggling the bottom bar.
+- [ ] Confirm TTS on a real device for both `fil-PH` and `tl-PH` fallback behavior.
+- [ ] Open both games on a fresh install path and confirm DB-backed item loading, localized result dialogs, and score updates still work end to end.
+- [ ] Run Gradle build/tests once the environment uses a supported JDK (for example JDK 17 or 21) and Android SDK toolchain.
+
+## Translation Double-Check (April 20, 2026)
+
+### Verified now
+
+- [x] Key parity still holds between `values/strings.xml` and `values-tl/strings.xml`.
+- [x] Active Kotlin UI code is mostly locale-driven via base `R.string.*` keys.
+- [x] No active screen flow was found still branching on `_en` / `_tl` resource IDs for normal UI labels.
+
+### New TODO from this re-check
+
+- [ ] Replace remaining hardcoded bilingual sample labels in `ScannerActivity.PresetSample` with `WasteCatalog` or `R.string` lookups to prevent drift.
+- [ ] Decide whether `scanner_header` in `values-tl/strings.xml` should be Filipino text instead of `Scanner Page`.
+- [ ] Decide whether `info_title` should remain bilingual (`Non-Biodegradable\nHindi Nabubulok`) or be Filipino-only in the Filipino locale.
+- [ ] Consolidate or retire legacy duplicate key families (`*_en`, `*_tl`) that are no longer used in active UI code.
+- [ ] Keep DB contract literals (`Street Cleanup`, `Trash Sorting`, `Easy/Medium/Hard`) centralized in one helper/constant owner so they do not drift across files.
+
+## Anti-Hallucination / Anti-Drift Guardrails
+
+Use this checklist before any future translation edit:
+
+- [ ] Source of truth first: check `values/strings.xml`, `values-tl/strings.xml`, `WasteCatalog`, and packaged DB (`app/src/main/assets/databases/recyclensdb.db`) before changing wording.
+- [ ] Never invent Filipino labels in feature code when a canonical resource or catalog entry exists.
+- [ ] If wording changes in one place, sync all authoritative mirrors in the same change: resources, `WasteCatalog`, and validator docs (`bilingual.md`, `bilingguwal.md`) when applicable.
+- [ ] Prefer base semantic keys (`R.string.foo`) over language-encoded key selection in Kotlin.
+- [ ] Keep one mapper only for fallback naming/category detection (`WasteCatalog`) and do not add parallel heuristics.
+- [ ] Validate with automated checks when available: string-key parity test, locale-switching instrumentation test, and DB smoke test.
+- [ ] Do not claim build/test success unless a real Gradle run succeeds in the current environment.

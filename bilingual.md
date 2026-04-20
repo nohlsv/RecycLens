@@ -1,140 +1,91 @@
-Document Description
-This document contains the complete and organized English and Tagalog content
-intended for use in the RecycLens mobile application, which is part of our Capstone
-project or research. Everything written here is meant to help kindergarten learners
-understand proper waste segregation and disposal in a simple, clear, and engaging
-manner.
-The descriptions and messages were crafted to be easily understood by young children,
-especially since they are at an age where they are just beginning to process language and
-concepts related to the environment. Each sentence was written with an appropriate tone
-so that it remains light and easy to read both for the learners and for the teacher who will
-guide them while using the app. The examples of waste and explanations were based on
-real situations in schools and homes to make the content more familiar and easier for
-children to learn.
-This document was prepared to serve as the official reference to be submitted to the
-validator as part of our mobile application Capstone project, ensuring that the content is
-accurate and aligned with the educational purpose of RecycLens as a learning-focused
-mobile app.
-Items
-English – Plastic Bottle
-Tagalog – Boteng Plastik
-English – Snack Wrapper
-Tagalog – Balat ng chichirya
-English – Styrofoam
-Tagalog – Styrofoam
-English – Can
-Tagalog – Lata
-English – Fruit
-Tagalog – Prutas
-English – Vegetable
-Tagalog – Gulay
-English – Paper
-Tagalog – Papel
-English – Leaf
-Tagalog – Dahon
-English – Plastic Cup
-Tagalog – Plastik na Baso
-English – Tissue
-Tagalog – Tisyu
-Item Descriptions
-English – This is a Plastic Bottle. It is
-used to hold water. Plastic bottles go to
-the blue bin.
-Tagalog – Ito ay Boteng Plastik.
-Lalagyan ito ng tubig. Ilagay ito sa asul
-na basurahan para sa Hindi Nabubulok.
-English – This is a snack wrapper. It
-keeps food clean but does not rot. Put
-this in the blue bin.
-Tagalog – Ito ay balat ng chichirya.
-Hindi ito nabubulok. Ilagay sa asul na
-basurahan.
-English – This is Styrofoam. It takes a
-very long time to disappear. Put this in
-the blue bin.
-Tagalog – Ito ay Styrofoam. Matagal
-itong masira at hindi nabubulok. Ilagay
-sa asul na basurahan.
-English – This is a can. It is made of
-metal. Put this in the Blue Bin.
-Tagalog – Ito ay lata. Gawa ito sa bakal.
-Ilagay sa Asul na Basurahan.
-English – This is a Fruit. It rots and helps
-the soil. Put this in the Green Bin.
-Tagalog – Ito ay Prutas. Nabubulok ito at
-nagiging pataba sa lupa. Ilagay sa
-Berdeng Basurahan.
-English – This is a Vegetable. Animals
-can eat this. Put this in the Green Bin.
-Tagalog – Ito ay Gulay. Pwede itong
-ipakain sa hayop o maging pataba. Ilagay
-sa Berdeng Basurahan.
-English – This is Paper. It is made from
-trees. Put this in the Green Bin.
-Tagalog – Ito ay Papel. Gawa ito sa puno
-at nabubulok. Ilagay sa Berdeng
-Basurahan.
-English – This is a Leaf. It falls from
-trees. Put this in the Green Bin.
-Tagalog – Ito ay Dahon. Nalalaglag ito
-mula sa puno. Ilagay sa Berdeng
-Basurahan.
-English – This is a Plastic Cup. It does
-not rot. Put this in the Blue Bin
-Tagalog – Ito ay Plastik na Baso. Hindi
-ito nabubulok. Ilagay sa Asul na
-Basurahan.
-English – This is tissue. It is soft and rots
-easily. Put this in the Green Bin.
-Tagalog – Ito ay Tisyu. Mabilis itong
-mabulok. Ilagay sa Berdeng Basurahan.
-Game Titles
-English – Trash Sorting Game / Street
-Cleanup Game
-Tagalog – Laro ng Paghihiwalay ng
-Basura / Laro ng Paglilinis ng Kalsada
-Level Select
-English – Choose Your Level
-Tagalog – Pumili ng Level
-Success Feedback (Short)
-English – Correct!
-Tagalog – Tama!
-Error Feedback (Short)
-English – Oops! Wrong bin.
-Tagalog – Ay! Mali ang basurahan.
-Congratulatory Screen (Trash Sorting
-Game)
-English – Great Job! You sorted all the
-trash correctly!
-Tagalog – Mahusay! Tama ang
-paghihiwalay mo ng basura!
-Congratulatory Screen (Street
-Cleanup Game)
-English – Great Job! You collected all
-the trash correctly!
-Tagalog – Mahusay! Nalinis mo ang
-lahat ng kalat!
-Error Feedback
-English – Try again, this goes into the
-non-biodegradable bin.
-Tagalog – Subukan ulit! Dapat ito sa
-Hindi Nabubulok.
-Game Over (Time)
-English – Time's up!
-Tagalog – Ubos na ang oras!
-Consequence Screen (Street Cleanup
-Game)
-English – Oh no! The trash blocked the
-drains. Now the street is flooded! Let's
-clean up next time.
-Tagalog – Naku! Bumara ang kalat sa
-kanal. Baha na tuloy! Itapon natin nang
-tama ang basura sa susunod.
+# RecycLens English-Filipino Reference
+
+This document contains the validated English and Filipino wording used by RecycLens for classroom-facing waste labels, item descriptions, and game messages. It is intended to support validator review and to stay aligned with the app's current strings and packaged database content.
+
+## Items
+
+- English: Bottle
+  Filipino: Bote
+- English: Candy Wrapper
+  Filipino: Balot ng Kendi
+- English: Styrofoam Box
+  Filipino: Styro na Lalagyan
+- English: Can
+  Filipino: Lata
+- English: Fruit
+  Filipino: Prutas
+- English: Vegetable
+  Filipino: Gulay
+- English: Paper
+  Filipino: Papel
+- English: Leaf
+  Filipino: Dahon
+- English: Plastic Cup
+  Filipino: Plastik na Baso
+- English: Tissue
+  Filipino: Tisyu
+
+## Item Descriptions
+
+- English: This is a bottle. It is used to hold water or juice. Put this in the Blue Bin.
+  Filipino: Ito ay bote. Ginagamit ito sa paglalagay ng tubig o juice. Ilagay ito sa Asul na Basurahan.
+- English: This is a candy wrapper. It keeps food clean but does not rot. Put this in the Blue Bin.
+  Filipino: Ito ay balot ng kendi. Hindi ito nabubulok. Ilagay ito sa Asul na Basurahan.
+- English: This is a styrofoam box. It takes a very long time to break down. Put this in the Blue Bin.
+  Filipino: Ito ay styro na lalagyan. Matagal itong masira at hindi nabubulok. Ilagay ito sa Asul na Basurahan.
+- English: This is a can. It is made of metal. Put this in the Blue Bin.
+  Filipino: Ito ay lata. Gawa ito sa metal. Ilagay ito sa Asul na Basurahan.
+- English: This is a fruit. It rots and helps the soil. Put this in the Green Bin.
+  Filipino: Ito ay prutas. Nabubulok ito at nakatutulong sa lupa. Ilagay ito sa Berdeng Basurahan.
+- English: This is a vegetable. It can become compost. Put this in the Green Bin.
+  Filipino: Ito ay gulay. Maaari itong maging compost. Ilagay ito sa Berdeng Basurahan.
+- English: This is paper. It comes from trees and can rot. Put this in the Green Bin.
+  Filipino: Ito ay papel. Gawa ito sa puno at maaaring mabulok. Ilagay ito sa Berdeng Basurahan.
+- English: This is a leaf. It falls from trees and can rot. Put this in the Green Bin.
+  Filipino: Ito ay dahon. Nalalaglag ito mula sa puno at maaaring mabulok. Ilagay ito sa Berdeng Basurahan.
+- English: This is a plastic cup. It does not rot. Put this in the Blue Bin.
+  Filipino: Ito ay plastik na baso. Hindi ito nabubulok. Ilagay ito sa Asul na Basurahan.
+- English: This is tissue. It is soft and rots easily. Put this in the Green Bin.
+  Filipino: Ito ay tisyu. Mabilis itong mabulok. Ilagay ito sa Berdeng Basurahan.
+
+## Game Text
+
+- Game Titles
+  English: Trash Sorting Game / Street Cleanup Game
+  Filipino: Laro ng Paghihiwalay ng Basura / Laro ng Paglilinis ng Kalsada
+- Level Select
+  English: Choose Your Level
+  Filipino: Pumili ng Level
+- Success Feedback
+  English: Correct!
+  Filipino: Tama!
+- Error Feedback
+  English: Oops! Wrong bin.
+  Filipino: Ay! Mali ang basurahan.
+- Trash Sorting Success
+  English: Great job! You sorted the trash.
+  Filipino: Mahusay! Tama ang paghihiwalay mo ng basura.
+- Street Cleanup Success
+  English: Great job! You cleaned up the street.
+  Filipino: Mahusay! Nalinis mo ang kalsada.
+- Try Again Prompt
+  English: Try again. This belongs in the non-biodegradable bin.
+  Filipino: Subukan ulit. Dapat ito sa di-nabubulok na basurahan.
+- Time Up
+  English: Time's up!
+  Filipino: Ubos na ang oras!
+- Consequence Screen
+  English: Oh no! The trash blocked the drains and the street flooded.
+  Filipino: Naku! Bumara ang kalat sa kanal kaya bumaha ang kalsada.
+
+## Validation Record
+
 Prepared for validation by:
-Arkin Reinier S. Aguilar
-2022171109
-Nikki Neil P. Cariño
-2020145420
+
+- Arkin Reinier S. Aguilar - 2022171109
+- Nikki Neil P. Carino - 2020145420
+
 Validated by:
-Asst. Prof. Emelito F. Sarmago, MEd
-Master of Education, major in English
+
+- Asst. Prof. Emelito F. Sarmago, MEd
+- Master of Education, major in English

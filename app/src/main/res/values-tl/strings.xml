@@ -40,7 +40,7 @@
 
     <!-- Labels -->
     <string name="label_en">EN</string>
-    <string name="label_tl">TL</string>
+    <string name="label_tl">FIL</string>
     <string name="label_easy">Madali</string>
     <string name="label_medium">Katamtaman</string>
     <string name="label_hard">Mahirap</string>
@@ -190,12 +190,12 @@
     <string name="street_bio_items_tl">Ang mga item na ito ay para sa nabubulok na basurahan:</string>
     <string name="street_nonbio_items_en">These items belong to the non-biodegradable bin:</string>
     <string name="street_nonbio_items_tl">Ang mga item na ito ay para sa di-nabubulok na basurahan:</string>
-    <string name="street_game_info_1">Ang mga nabubulok na bagay tulad ng food waste, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
-    <string name="street_game_info_2">Ang mga di-nabubulok na bagay tulad ng plastic, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
+    <string name="street_game_info_1">Ang mga nabubulok na bagay tulad ng tirang pagkain, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
+    <string name="street_game_info_2">Ang mga di-nabubulok na bagay tulad ng plastik, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
     <string name="street_game_info_1_en">Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly.</string>
-    <string name="street_game_info_1_tl">Ang mga nabubulok na bagay tulad ng food waste, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
+    <string name="street_game_info_1_tl">Ang mga nabubulok na bagay tulad ng tirang pagkain, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
     <string name="street_game_info_2_en">Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains.</string>
-    <string name="street_game_info_2_tl">Ang mga di-nabubulok na bagay tulad ng plastic, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
+    <string name="street_game_info_2_tl">Ang mga di-nabubulok na bagay tulad ng plastik, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
     <string name="street_game_intro_footer">Habang naglalaro, i-drag ang bawat basura sa tamang basurahan bago maubos ang oras.</string>
     <string name="street_game_intro_footer_en">During the game, drag each piece of trash into the correct bin before the time runs out.</string>
     <string name="street_game_intro_footer_tl">Habang naglalaro, i-drag ang bawat basura sa tamang basurahan bago maubos ang oras.</string>
@@ -231,10 +231,10 @@
     <string name="item_grass">Damo</string>
     <string name="item_paper">Papel</string>
     <string name="item_tissue">Tisyu</string>
-    <string name="item_plastic_bottle">Boteng Plastik</string>
+    <string name="item_plastic_bottle">Bote</string>
     <string name="item_plastic_cup">Plastik na Baso</string>
-    <string name="item_candy_wrapper">Balat ng chichirya</string>
-    <string name="item_styrofoam_box">Styrofoam na lalagyan</string>
+    <string name="item_candy_wrapper">Balot ng Kendi</string>
+    <string name="item_styrofoam_box">Styro na Lalagyan</string>
     <string name="item_can">Lata</string>
     <string name="item_vegetable">Gulay</string>
     <string name="item_this_trash">Ang basurang ito</string>
@@ -253,5 +253,5 @@
 
     <!-- Info card -->
     <string name="info_title">Non-Biodegradable\nHindi Nabubulok</string>
-    <string name="info_description">Ito ay plastic bottle. Ginagamit ito sa paglalagay ng tubig o juice. Ang plastic bottle ay sa di-nabubulok na basurahan.</string>
+    <string name="info_description">Ito ay bote. Ginagamit ito sa paglalagay ng tubig o juice. Ang bote ay sa di-nabubulok na basurahan.</string>
 </resources>

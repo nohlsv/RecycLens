@@ -103,6 +103,7 @@ dependencies {
     implementation("androidx.sqlite:sqlite:2.4.0")
 
     testImplementation(libs.junit)
+    testImplementation("org.xerial:sqlite-jdbc:3.46.1.3")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

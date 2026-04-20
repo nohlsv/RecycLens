@@ -17,7 +17,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
+import com.example.recyclens.data.db.GameDatabase
 import java.util.Locale
 
 class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
@@ -38,8 +40,6 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private val circleViews = mutableListOf<View>()
     private lateinit var feedbackBanner: RecyclensFeedbackBanner
     private lateinit var styledDialog: RecyclensDialog
-
-    private val dbName = "recyclensdb.db"
 
     private data class WasteItem(
         val resName: String,
@@ -266,7 +266,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private fun loadItemsFromDb(): List<WasteItem> {
         val map = LinkedHashMap<String, WasteItem>()
         try {
-            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val db = GameDatabase.open(this)
             val sql = """
                 SELECT wm.image_path, wm.name_en, wm.name_tl, wc.name_en AS category_name_en
                 FROM waste_material wm
@@ -663,7 +663,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private fun saveGameResultToDb(totalScore: Int, correct: Int, wrong: Int) {
         try {
-            val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
+            val db = GameDatabase.open(this)
 
             db.execSQL(
                 """
@@ -734,42 +734,15 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun localizedItemLabel(item: WasteItem): String {
-        return when (item.resName) {
-            "ic_trash_banana" -> getString(R.string.item_banana_peel)
-            "ic_trash_fruit" -> getString(R.string.item_fruit)
-            "ic_trash_leaf" -> getString(R.string.item_leaf)
-            "ic_trash_grass" -> getString(R.string.item_grass)
-            "ic_trash_paper" -> getString(R.string.item_paper)
-            "ic_trash_tissue" -> getString(R.string.item_tissue)
-            "ic_trash_plastic_cup" -> getString(R.string.item_plastic_cup)
-            "ic_trash_bottle" -> getString(R.string.item_plastic_bottle)
-            "ic_trash_wrapper" -> getString(R.string.item_candy_wrapper)
-            "ic_trash_styro" -> getString(R.string.item_styrofoam_box)
-            else -> translateArbitraryItemLabel(item.labelEn, item.labelTl)
-        }
+        return WasteCatalog.localizedLabelForResName(this, item.resName)
+            ?: translateArbitraryItemLabel(item.labelEn, item.labelTl)
     }
 
     private fun translateArbitraryItemLabel(rawEn: String?, rawTl: String?): String {
         if (LanguagePrefs.isEnglish(this)) return rawEn ?: rawTl ?: getString(R.string.item_this_trash)
         rawTl?.takeIf { it.isNotBlank() }?.let { return it }
-        val raw = rawEn ?: return getString(R.string.item_this_trash)
-        val key = raw.lowercase()
-        return when {
-            key.contains("fruit vegetable peels") || key.contains("fruit and vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
-            key.contains("banana") -> getString(R.string.item_banana_peel)
-            key.contains("fruit") -> getString(R.string.item_fruit)
-            key.contains("vegetable") -> getString(R.string.item_vegetable)
-            key.contains("leaf") -> getString(R.string.item_leaf)
-            key.contains("grass") -> getString(R.string.item_grass)
-            key.contains("paper") -> getString(R.string.item_paper)
-            key.contains("tissue core") || key.contains("tissue") -> getString(R.string.item_tissue)
-            key.contains("plastic cup") || key.contains("cup") -> getString(R.string.item_plastic_cup)
-            key.contains("plastic bottle") || key.contains("bottle") -> getString(R.string.item_plastic_bottle)
-            key.contains("snack wrapper") || key.contains("candy wrapper") || key.contains("wrapper") -> getString(R.string.item_candy_wrapper)
-            key.contains("styro") || key.contains("foam") -> getString(R.string.item_styrofoam_box)
-            key.contains("can") -> getString(R.string.item_can)
-            else -> raw
-        }
+        val spec = rawEn?.let(WasteCatalog::findByDbName)
+        return WasteCatalog.localizedLabel(this, spec) ?: rawEn ?: getString(R.string.item_this_trash)
     }
 
     private fun dp(value: Int): Int {

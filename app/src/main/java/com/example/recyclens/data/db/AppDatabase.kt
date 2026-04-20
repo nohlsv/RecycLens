@@ -17,6 +17,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun recycLensDao(): RecycLensDao
 
     companion object {
+        const val DB_NAME = "recyclensdb.db"
+        const val DB_ASSET_PATH = "databases/recyclensdb.db"
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -25,9 +28,9 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "recyclensdb.db"
+                    DB_NAME
                 )
-                    .createFromAsset("databases/recyclensdb.db")
+                    .createFromAsset(DB_ASSET_PATH)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

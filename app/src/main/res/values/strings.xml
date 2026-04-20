@@ -40,7 +40,7 @@
 
     <!-- Labels -->
     <string name="label_en">EN</string>
-    <string name="label_tl">TL</string>
+    <string name="label_tl">FIL</string>
     <string name="label_easy">Easy</string>
     <string name="label_medium">Medium</string>
     <string name="label_hard">Hard</string>
@@ -136,8 +136,8 @@
     <string name="scanner_hindi_sigurado">Hindi ako sigurado</string>
     <string name="scanner_throw_blue">Put this in the Blue Bin.</string>
     <string name="scanner_throw_green">Put this in the Green Bin.</string>
-    <string name="scanner_itapon_blue">Itapon sa Blue Bin.</string>
-    <string name="scanner_itapon_green">Itapon sa Green Bin.</string>
+    <string name="scanner_itapon_blue">Put this in the Blue Bin.</string>
+    <string name="scanner_itapon_green">Put this in the Green Bin.</string>
     <string name="scanner_confidence">Confidence: %1$d%%</string>
     <string name="scanner_confidence_tl">Katiyakan: %1$d%%</string>
     <string name="scanner_voice_play_error">Voice guide could not play.</string>
@@ -193,9 +193,9 @@
     <string name="street_game_info_1">Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly.</string>
     <string name="street_game_info_2">Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains.</string>
     <string name="street_game_info_1_en">Biodegradable items, like food waste, paper, and leaves, should be placed in the green bin so they can decompose properly.</string>
-    <string name="street_game_info_1_tl">Ang mga nabubulok na bagay tulad ng food waste, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
+    <string name="street_game_info_1_tl">Ang mga nabubulok na bagay tulad ng tirang pagkain, papel, at dahon ay dapat sa Berdeng Basurahan para mabulok nang maayos.</string>
     <string name="street_game_info_2_en">Non biodegradable items, like plastic, bottles, and styrofoam, should be placed in the blue bin so they do not pollute and block the drains.</string>
-    <string name="street_game_info_2_tl">Ang mga di-nabubulok na bagay tulad ng plastic, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
+    <string name="street_game_info_2_tl">Ang mga di-nabubulok na bagay tulad ng plastik, bote, at styrofoam ay dapat sa Asul na Basurahan para hindi makabara at makapagdulot ng polusyon.</string>
     <string name="street_game_intro_footer">During the game, drag each piece of trash into the correct bin before the time runs out.</string>
     <string name="street_game_intro_footer_en">During the game, drag each piece of trash into the correct bin before the time runs out.</string>
     <string name="street_game_intro_footer_tl">Habang naglalaro, i-drag ang bawat basura sa tamang basurahan bago maubos ang oras.</string>
@@ -222,7 +222,7 @@
     <string name="item_paper">Paper</string>
     <string name="item_tissue">Tissue</string>
     <string name="item_plastic_cup">Plastic Cup</string>
-    <string name="item_candy_wrapper">Snack Wrapper</string>
+    <string name="item_candy_wrapper">Candy Wrapper</string>
     <string name="item_styrofoam_box">Styrofoam Box</string>
     <string name="item_can">Can</string>
     <string name="item_vegetable">Vegetable</string>
@@ -240,7 +240,7 @@
 
     <!-- Scanner page -->
     <string name="scanner_header">Scanner Page</string>
-    <string name="item_plastic_bottle">Plastic Bottle</string>
+    <string name="item_plastic_bottle">Bottle</string>
 
     <!-- A11y (content descriptions) -->
     <string name="cd_camera_preview">Live camera preview</string>
@@ -254,6 +254,6 @@
     <!-- Info card -->
     <string name="info_title">Non-Biodegradable\nHindi Nabubulok</string>
     <string name="info_description">
-        This is a Plastic Bottle. It is used to hold water or juice. Plastic bottles go to the non-biodegradable bin.
+        This is a bottle. It is used to hold water or juice. Bottles go to the non-biodegradable bin.
     </string>
 </resources>
