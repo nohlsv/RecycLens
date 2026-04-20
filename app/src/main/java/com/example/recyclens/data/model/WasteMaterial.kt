@@ -19,6 +19,6 @@ data class WasteMaterial(
     @ColumnInfo(name = "name_tl")
     val nameTl: String?,
 
-    @ColumnInfo(name = "image")
-    val image: String?
+    @ColumnInfo(name = "image_path")
+    val imagePath: String?
 )

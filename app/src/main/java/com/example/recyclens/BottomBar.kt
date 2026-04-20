@@ -28,8 +28,8 @@ object BottomBar {
         fun applyLanguageUi() {
             val isEnglish = LanguagePrefs.isEnglish(activity)
             langText?.text = activity.getString(if (isEnglish) R.string.label_en else R.string.label_tl)
-            labelScan?.text = activity.getString(if (isEnglish) R.string.label_scan_trash_en else R.string.label_scan_trash_tl)
-            labelPlay?.text = activity.getString(if (isEnglish) R.string.label_play_games_en else R.string.label_play_games_tl)
+            labelScan?.text = activity.getString(R.string.label_scan_trash)
+            labelPlay?.text = activity.getString(R.string.label_play_games)
         }
 
         applyLanguageUi()

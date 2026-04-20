@@ -48,9 +48,8 @@ class GameSelectActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun refreshLocalizedTexts() {
-        val isEnglish = LanguagePrefs.isEnglish(this)
-        tvTrashTitle.text = getString(if (isEnglish) R.string.game_trash_sorting_en else R.string.game_trash_sorting_tl)
-        tvStreetTitle.text = getString(if (isEnglish) R.string.game_street_cleanup_en else R.string.game_street_cleanup_tl)
+        tvTrashTitle.text = getString(R.string.game_trash_sorting)
+        tvStreetTitle.text = getString(R.string.game_street_cleanup)
     }
 
     override fun onResume() {

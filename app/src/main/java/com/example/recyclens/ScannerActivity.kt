@@ -115,7 +115,7 @@ class ScannerActivity : AppCompatActivity() {
 
     private val presetSamples = listOf(
         PresetSample("banana", R.drawable.ic_trash_banana, "Banana Peel", "Balat ng saging"),
-        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Plastic Bottle", "Plastic na bote"),
+        PresetSample("pet-bottle", R.drawable.ic_trash_bottle, "Plastic Bottle", "Boteng Plastik"),
         PresetSample("apple", R.drawable.ic_trash_fruit, "Apple Core", "Ubod ng mansanas"),
         PresetSample("grass", R.drawable.ic_trash_grass, "Grass", "Damo"),
         PresetSample("leaves", R.drawable.ic_trash_leaf, "Leaves", "Dahon"),
@@ -123,7 +123,7 @@ class ScannerActivity : AppCompatActivity() {
         PresetSample("plastic-cup", R.drawable.ic_trash_plastic_cup, "Plastic Cup", "Plastic na baso"),
         PresetSample("styrofoam", R.drawable.ic_trash_styro, "Styrofoam Tray", "Styrofoam na lalagyan"),
         PresetSample("tissue", R.drawable.ic_trash_tissue, "Tissue", "Tisyu"),
-        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Snack Wrapper", "Balot ng meryenda")
+        PresetSample("plastic-wrapper", R.drawable.ic_trash_wrapper, "Snack Wrapper", "Balat ng chichirya")
     )
 
     companion object {
@@ -143,11 +143,10 @@ class ScannerActivity : AppCompatActivity() {
             if (granted) {
                 startCamera()
             } else {
-                val msg = if (isEnglish)
-                    getString(R.string.scanner_camera_permission_required)
-                else
-                    getString(R.string.scanner_camera_permission_required_tl)
-                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+                feedbackBanner.show(
+                    getString(R.string.scanner_camera_permission_required),
+                    RecyclensFeedbackBanner.Style.ERROR
+                )
             }
         }
 
@@ -162,8 +161,10 @@ class ScannerActivity : AppCompatActivity() {
                 showCapturedPhoto(bmp)
                 classifyAndFetch(bmp)
             } else {
-                val msg = if (isEnglish) "Could not open image" else "Hindi mabuksan ang larawan"
-                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+                feedbackBanner.show(
+                    getString(R.string.scanner_could_not_open_image),
+                    RecyclensFeedbackBanner.Style.ERROR
+                )
             }
         }
 
@@ -233,7 +234,7 @@ class ScannerActivity : AppCompatActivity() {
                     val result = tts?.speak(queued, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
                     if (result == TextToSpeech.ERROR) {
                         feedbackBanner.show(
-                            if (isEnglish) "Voice guide could not play." else "Hindi ma-play ang voice guide.",
+                            getString(R.string.scanner_voice_play_error),
                             RecyclensFeedbackBanner.Style.ERROR
                         )
                     }
@@ -241,7 +242,7 @@ class ScannerActivity : AppCompatActivity() {
             } else {
                 ttsReady = false
                 feedbackBanner.show(
-                    if (isEnglish) "Voice guide is unavailable on this device." else "Hindi available ang voice guide sa device na ito.",
+                    getString(R.string.scanner_voice_unavailable),
                     RecyclensFeedbackBanner.Style.WARNING
                 )
             }
@@ -302,7 +303,7 @@ class ScannerActivity : AppCompatActivity() {
 
             if (text.isBlank()) {
                 feedbackBanner.show(
-                    if (isEnglish) "Scan a trash item first." else "Mag-scan muna ng basura.",
+                    getString(R.string.scanner_scan_first),
                     RecyclensFeedbackBanner.Style.WARNING
                 )
                 return@setOnClickListener
@@ -311,7 +312,7 @@ class ScannerActivity : AppCompatActivity() {
             if (!ttsReady || tts == null) {
                 pendingSpeakText = text
                 feedbackBanner.show(
-                    if (isEnglish) "Voice guide is loading. Please tap again in a moment." else "Naglo-load pa ang voice guide. Pindutin muli sandali.",
+                    getString(R.string.scanner_voice_loading),
                     RecyclensFeedbackBanner.Style.INFO
                 )
                 return@setOnClickListener
@@ -326,7 +327,7 @@ class ScannerActivity : AppCompatActivity() {
             val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
             if (result == TextToSpeech.ERROR) {
                 feedbackBanner.show(
-                    if (isEnglish) "Voice guide could not play." else "Hindi ma-play ang voice guide.",
+                    getString(R.string.scanner_voice_play_error),
                     RecyclensFeedbackBanner.Style.ERROR
                 )
             }
@@ -353,15 +354,9 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun updateLanguageTexts() {
-        if (isEnglish) {
-            langText.text = getString(R.string.label_en)
-            labelScan.text = getString(R.string.label_scan_trash_en)
-            labelPlay.text = getString(R.string.label_play_games_en)
-        } else {
-            langText.text = getString(R.string.label_tl)
-            labelScan.text = getString(R.string.label_scan_trash_tl)
-            labelPlay.text = getString(R.string.label_play_games_tl)
-        }
+        langText.text = getString(if (isEnglish) R.string.label_en else R.string.label_tl)
+        labelScan.text = getString(R.string.label_scan_trash)
+        labelPlay.text = getString(R.string.label_play_games)
     }
 
     private fun updateTtsLanguage() {
@@ -436,10 +431,10 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun captureFrameFromPreview() {
-        titleBar.text = if (isEnglish) getString(R.string.scanner_taking_picture) else getString(R.string.scanner_kumukuha_ng_larawan)
+        titleBar.text = getString(R.string.scanner_taking_picture)
         val capture = imageCapture
         if (capture == null) {
-            titleBar.text = if (isEnglish) getString(R.string.scanner_opps_try_again) else getString(R.string.scanner_ay_ulitin)
+            titleBar.text = getString(R.string.scanner_opps_try_again)
             feedbackBanner.show(getString(R.string.scanner_camera_not_ready), RecyclensFeedbackBanner.Style.ERROR)
             return
         }
@@ -461,9 +456,8 @@ class ScannerActivity : AppCompatActivity() {
                         val bitmap = decodeBitmapFromFileSafely(photoFile, maxDim = 1600)
                         if (bitmap == null) {
                             runOnUiThread {
-                                titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                                val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
-                                feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+                                titleBar.text = getString(R.string.scanner_opps_try_again)
+                                feedbackBanner.show(getString(R.string.scanner_unable_capture), RecyclensFeedbackBanner.Style.ERROR)
                             }
                             return
                         }
@@ -475,9 +469,8 @@ class ScannerActivity : AppCompatActivity() {
                     } catch (e: Exception) {
                         Log.e("RECYC_LENS_ML", "Capture decode failed", e)
                         runOnUiThread {
-                            titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                            val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
-                            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+                            titleBar.text = getString(R.string.scanner_opps_try_again)
+                            feedbackBanner.show(getString(R.string.scanner_unable_capture), RecyclensFeedbackBanner.Style.ERROR)
                         }
                     } finally {
                         try {
@@ -490,9 +483,8 @@ class ScannerActivity : AppCompatActivity() {
                 override fun onError(exception: ImageCaptureException) {
                     Log.e("RECYC_LENS_ML", "Capture error", exception)
                     runOnUiThread {
-                        titleBar.text = if (isEnglish) "Oops, try again!" else "Ay, ulitin natin!"
-                        val msg = if (isEnglish) getString(R.string.scanner_unable_capture) else getString(R.string.scanner_hindi_makuha)
-                        feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+                        titleBar.text = getString(R.string.scanner_opps_try_again)
+                        feedbackBanner.show(getString(R.string.scanner_unable_capture), RecyclensFeedbackBanner.Style.ERROR)
                     }
                     try {
                         if (photoFile.exists()) photoFile.delete()
@@ -601,13 +593,12 @@ class ScannerActivity : AppCompatActivity() {
     private fun applyPresetSample(sample: PresetSample) {
         val bitmap = drawableToBitmap(sample.drawableRes)
         if (bitmap == null) {
-            val msg = if (isEnglish) getString(R.string.scanner_load_sample_fail) else getString(R.string.scanner_load_sample_fail_tl)
-            feedbackBanner.show(msg, RecyclensFeedbackBanner.Style.ERROR)
+            feedbackBanner.show(getString(R.string.scanner_load_sample_fail), RecyclensFeedbackBanner.Style.ERROR)
             return
         }
 
         showCapturedPhoto(bitmap)
-        titleBar.text = if (isEnglish) getString(R.string.scanner_using_sample) else getString(R.string.scanner_gumagamit_sample)
+        titleBar.text = getString(R.string.scanner_using_sample)
         lastPrediction = PredictedItem(sample.label, 1f)
         fetchMaterialAndCategory(PredictedItem(sample.label, 1f))
     }
@@ -650,11 +641,9 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     private fun classifyAndFetch(bitmap: Bitmap) {
-        titleBar.text = if (isEnglish) getString(R.string.scanner_looking_closely) else getString(R.string.scanner_tinitingnan_mabuti)
-        infoTitle.text = if (isEnglish) getString(R.string.scanner_analyzing) else getString(R.string.scanner_sinusuri)
-        infoText.text =
-            if (isEnglish) getString(R.string.scanner_checking_waste)
-            else getString(R.string.scanner_checking_waste_tl)
+        titleBar.text = getString(R.string.scanner_looking_closely)
+        infoTitle.text = getString(R.string.scanner_analyzing)
+        infoText.text = getString(R.string.scanner_checking_waste)
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
         speakTextEn = null
         speakTextTl = null
@@ -1015,15 +1004,9 @@ class ScannerActivity : AppCompatActivity() {
         lastCategory = null
         speakTextEn = null
         speakTextTl = null
-        if (isEnglish) {
-            titleBar.text = getString(R.string.scanner_not_sure)
-            infoTitle.text = getString(R.string.category_unknown)
-            infoText.text = getString(R.string.scanner_try_another_desc)
-        } else {
-            titleBar.text = getString(R.string.scanner_hindi_sigurado)
-            infoTitle.text = getString(R.string.category_unknown_tl)
-            infoText.text = getString(R.string.scanner_try_another_desc_tl)
-        }
+        titleBar.text = getString(R.string.scanner_not_sure)
+        infoTitle.text = getString(R.string.category_unknown)
+        infoText.text = getString(R.string.scanner_try_another_desc)
         infoRightIcon.setImageResource(R.drawable.ic_green_bin)
     }
 
@@ -1031,21 +1014,21 @@ class ScannerActivity : AppCompatActivity() {
         val lower = englishName.lowercase()
         return when {
             lower.contains("fruit and vegetable peels") || lower.contains("fruit vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
-            lower.contains("banana") -> "Balat ng saging"
+            lower.contains("banana") -> getString(R.string.item_banana_peel)
             lower.contains("apple core") || lower.contains("apple") -> "Ubod ng mansanas"
             lower.contains("mango peel") || lower.contains("mango") -> "Balat ng mangga"
-            lower.contains("plastic bottle") || (lower.contains("bottle") && lower.contains("plastic")) -> "Plastic na bote"
-            lower.contains("plastic cup") -> "Plastic na baso"
-            lower.contains("pet bottle") -> "PET na bote"
-            lower.contains("snack wrapper") -> "Balot ng meryenda"
-            lower.contains("stationery paper") -> "Papel pang-sulat"
+            lower.contains("plastic bottle") || (lower.contains("bottle") && lower.contains("plastic")) -> getString(R.string.item_plastic_bottle)
+            lower.contains("plastic cup") -> getString(R.string.item_plastic_cup)
+            lower.contains("pet bottle") -> getString(R.string.item_plastic_bottle)
+            lower.contains("snack wrapper") -> getString(R.string.item_candy_wrapper)
+            lower.contains("stationery paper") -> getString(R.string.item_paper)
             lower.contains("tissue core") -> "Gitna ng tisyu"
-            lower.contains("tissue") -> "Tisyu"
-            lower.contains("grass") -> "Damo"
-            lower.contains("leaf") || lower.contains("leaves") -> "Dahon"
-            lower.contains("styrofoam") || lower.contains("styro") || lower.contains("tray") -> "Styrofoam na lalagyan"
-            lower.contains("wrapper") -> "Balot ng kendi"
-            lower.contains("can") || lower.contains("lata") -> "Lata"
+            lower.contains("tissue") -> getString(R.string.item_tissue)
+            lower.contains("grass") -> getString(R.string.item_grass)
+            lower.contains("leaf") || lower.contains("leaves") -> getString(R.string.item_leaf)
+            lower.contains("styrofoam") || lower.contains("styro") || lower.contains("tray") -> getString(R.string.item_styrofoam_box)
+            lower.contains("wrapper") -> getString(R.string.item_candy_wrapper)
+            lower.contains("can") || lower.contains("lata") -> getString(R.string.item_can)
             else -> null
         }
     }
@@ -1055,15 +1038,9 @@ class ScannerActivity : AppCompatActivity() {
         if (pred == null) {
             speakTextEn = null
             speakTextTl = null
-            if (isEnglish) {
-                titleBar.text = getString(R.string.scanner_camera_ready)
-                infoTitle.text = getString(R.string.scanner_scan_a_trash_item)
-                infoText.text = getString(R.string.scanner_camera_ready_desc)
-            } else {
-                titleBar.text = getString(R.string.scanner_handa_ang_camera)
-                infoTitle.text = getString(R.string.scanner_i_scan_ang_basura)
-                infoText.text = getString(R.string.scanner_camera_ready_desc_tl)
-            }
+            titleBar.text = getString(R.string.scanner_camera_ready)
+            infoTitle.text = getString(R.string.scanner_scan_a_trash_item)
+            infoText.text = getString(R.string.scanner_camera_ready_desc)
             infoRightIcon.setImageResource(R.drawable.ic_green_bin)
             return
         }
@@ -1082,7 +1059,7 @@ class ScannerActivity : AppCompatActivity() {
         val categoryDescTl: String
 
         if (material != null) {
-            materialNameEn = displayLabel
+            materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: displayLabel
             materialNameTl =
                 material.nameTl?.takeIf { it.isNotBlank() }
                     ?: getTagalogMaterialName(materialNameEn)
@@ -1132,11 +1109,11 @@ class ScannerActivity : AppCompatActivity() {
             titleBar.text = materialNameTl
             infoTitle.text = categoryNameTl
             val confidence = (pred.confidence.coerceIn(0f, 1f) * 100f).toInt()
-            val confidenceText = getString(R.string.scanner_confidence_tl, confidence)
+            val confidenceText = getString(R.string.scanner_confidence, confidence)
             infoText.text = "$materialNameTl\n$categoryDescTl\n$confidenceText"
         }
 
-        val imageName = material?.image ?: ""
+        val imageName = material?.imagePath ?: ""
         val resId = resolveScannedObjectImageRes(
             imageName = imageName,
             predictedLabel = pred.label,

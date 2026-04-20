@@ -23,6 +23,6 @@ data class WasteCategory(
     @ColumnInfo(name = "description_tl")
     val descriptionTl: String?,
 
-    @ColumnInfo(name = "image")
-    val image: String?
+    @ColumnInfo(name = "icon_path")
+    val iconPath: String?
 )

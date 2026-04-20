@@ -56,23 +56,21 @@ class ChooseLevelActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun refreshLocalizedTexts() {
-        val isEnglish = LanguagePrefs.isEnglish(this)
-
         tvTitle.text = when (gameType) {
             GameSelectActivity.GAME_STREET_CLEANUP ->
-                getString(if (isEnglish) R.string.label_choose_level_street_en else R.string.label_choose_level_street_tl)
+                getString(R.string.label_choose_level_street)
             GameSelectActivity.GAME_TRASH_SORTING ->
-                getString(if (isEnglish) R.string.label_choose_level_trash_en else R.string.label_choose_level_trash_tl)
+                getString(R.string.label_choose_level_trash)
             else ->
-                getString(if (isEnglish) R.string.label_choose_level_en else R.string.label_choose_level_tl)
+                getString(R.string.label_choose_level)
         }
 
-        tvEasyLabel.text = getString(if (isEnglish) R.string.label_easy_en else R.string.label_easy_tl)
-        tvMediumLabel.text = getString(if (isEnglish) R.string.label_medium_en else R.string.label_medium_tl)
-        tvHardLabel.text = getString(if (isEnglish) R.string.label_hard_en else R.string.label_hard_tl)
-        tvEasyDesc.text = getString(if (isEnglish) R.string.desc_easy_en else R.string.desc_easy_tl)
-        tvMediumDesc.text = getString(if (isEnglish) R.string.desc_medium_en else R.string.desc_medium_tl)
-        tvHardDesc.text = getString(if (isEnglish) R.string.desc_hard_en else R.string.desc_hard_tl)
+        tvEasyLabel.text = getString(R.string.label_easy)
+        tvMediumLabel.text = getString(R.string.label_medium)
+        tvHardLabel.text = getString(R.string.label_hard)
+        tvEasyDesc.text = getString(R.string.desc_easy)
+        tvMediumDesc.text = getString(R.string.desc_medium)
+        tvHardDesc.text = getString(R.string.desc_hard)
     }
 
     private fun openGame(level: Int) {

@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.recyclens.data.db.AppDatabase
 import java.util.Locale
 
 class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
@@ -44,7 +45,8 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         val resName: String,
         val drawableRes: Int,
         val isBiodegradable: Boolean,
-        val label: String
+        val labelEn: String? = null,
+        val labelTl: String? = null
     )
 
     private var allItems: List<WasteItem> = emptyList()
@@ -122,6 +124,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         applyLevelBadgeText()
         refreshLocalizedTexts()
 
+        AppDatabase.getInstance(applicationContext)
         allItems = loadItemsFromDb()
         resetScoreAndCircles(0)
 
@@ -156,8 +159,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun refreshLocalizedTexts() {
-        val isEnglish = LanguagePrefs.isEnglish(this)
-        titleTrash.text = getString(if (isEnglish) R.string.game_trash_sorting_en else R.string.game_trash_sorting_tl)
+        titleTrash.text = getString(R.string.game_trash_sorting)
         applyLevelBadgeText()
 
         btnStart.text = when {
@@ -255,14 +257,6 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
-    private fun tr(enRes: Int, tlRes: Int): String {
-        return getString(if (LanguagePrefs.isEnglish(this)) enRes else tlRes)
-    }
-
-    private fun trf(enRes: Int, tlRes: Int, vararg args: Any): String {
-        return if (LanguagePrefs.isEnglish(this)) getString(enRes, *args) else getString(tlRes, *args)
-    }
-
     private fun stopTts() {
         if (ttsReady) {
             tts?.stop()
@@ -274,24 +268,32 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         try {
             val db = openOrCreateDatabase(dbName, MODE_PRIVATE, null)
             val sql = """
-                SELECT wm.image_path, wm.name_en, wc.name
+                SELECT wm.image_path, wm.name_en, wm.name_tl, wc.name_en AS category_name_en
                 FROM waste_material wm
                 JOIN waste_category wc ON wm.category_id = wc.category_id
                 WHERE wm.image_path IS NOT NULL AND wm.image_path <> ''
             """.trimIndent()
             val c = db.rawQuery(sql, null)
             val imgIdx = c.getColumnIndex("image_path")
-            val nameIdx = c.getColumnIndex("name_en")
-            val catIdx = c.getColumnIndex("name")
+            val nameEnIdx = c.getColumnIndex("name_en")
+            val nameTlIdx = c.getColumnIndex("name_tl")
+            val catIdx = c.getColumnIndex("category_name_en")
             while (c.moveToNext()) {
                 val img = c.getString(imgIdx) ?: continue
                 if (map.containsKey(img)) continue
-                val label = c.getString(nameIdx) ?: img
+                val labelEn = c.getString(nameEnIdx) ?: img
+                val labelTl = c.getString(nameTlIdx)
                 val catName = c.getString(catIdx) ?: ""
                 val isBio = catName.equals("Biodegradable", ignoreCase = true)
                 val resId = resources.getIdentifier(img, "drawable", packageName)
                 if (resId != 0) {
-                    map[img] = WasteItem(img, resId, isBio, label)
+                    map[img] = WasteItem(
+                        resName = img,
+                        drawableRes = resId,
+                        isBiodegradable = isBio,
+                        labelEn = labelEn,
+                        labelTl = labelTl
+                    )
                 }
             }
             c.close()
@@ -303,30 +305,30 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         if (map.isNotEmpty()) return map.values.toList()
 
         return listOf(
-            WasteItem("ic_trash_banana", R.drawable.ic_trash_banana, true, getString(R.string.item_banana_peel)),
-            WasteItem("ic_trash_fruit", R.drawable.ic_trash_fruit, true, getString(R.string.item_fruit)),
-            WasteItem("ic_trash_leaf", R.drawable.ic_trash_leaf, true, getString(R.string.item_leaf)),
-            WasteItem("ic_trash_paper", R.drawable.ic_trash_paper, true, getString(R.string.item_paper)),
-            WasteItem("ic_trash_tissue", R.drawable.ic_trash_tissue, true, getString(R.string.item_tissue)),
-            WasteItem("ic_trash_plastic_cup", R.drawable.ic_trash_plastic_cup, false, getString(R.string.item_plastic_cup)),
-            WasteItem("ic_trash_bottle", R.drawable.ic_trash_bottle, false, getString(R.string.item_plastic_bottle)),
-            WasteItem("ic_trash_wrapper", R.drawable.ic_trash_wrapper, false, getString(R.string.item_candy_wrapper)),
-            WasteItem("ic_trash_styro", R.drawable.ic_trash_styro, false, getString(R.string.item_styrofoam_box)),
-            WasteItem("ic_trash_grass", R.drawable.ic_trash_grass, true, getString(R.string.item_grass))
+            WasteItem("ic_trash_banana", R.drawable.ic_trash_banana, true),
+            WasteItem("ic_trash_fruit", R.drawable.ic_trash_fruit, true),
+            WasteItem("ic_trash_leaf", R.drawable.ic_trash_leaf, true),
+            WasteItem("ic_trash_paper", R.drawable.ic_trash_paper, true),
+            WasteItem("ic_trash_tissue", R.drawable.ic_trash_tissue, true),
+            WasteItem("ic_trash_plastic_cup", R.drawable.ic_trash_plastic_cup, false),
+            WasteItem("ic_trash_bottle", R.drawable.ic_trash_bottle, false),
+            WasteItem("ic_trash_wrapper", R.drawable.ic_trash_wrapper, false),
+            WasteItem("ic_trash_styro", R.drawable.ic_trash_styro, false),
+            WasteItem("ic_trash_grass", R.drawable.ic_trash_grass, true)
         )
     }
 
     private fun showInstructionDialog(page: Int = 1) {
         val title = if (page == 1) {
-            tr(R.string.dialog_title_bio_green_en, R.string.dialog_title_bio_green_tl)
+            getString(R.string.dialog_title_bio_green)
         } else {
-            tr(R.string.dialog_title_nonbio_blue_en, R.string.dialog_title_nonbio_blue_tl)
+            getString(R.string.dialog_title_nonbio_blue)
         }
 
         val text = if (page == 1) {
-            tr(R.string.street_game_info_1_en, R.string.street_game_info_1_tl)
+            getString(R.string.street_game_info_1)
         } else {
-            tr(R.string.street_game_info_2_en, R.string.street_game_info_2_tl)
+            getString(R.string.street_game_info_2)
         }
         val content = createInstructionContent(page)
 
@@ -386,7 +388,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         }
 
         val binLabel = TextView(this).apply {
-            text = if (page == 1) tr(R.string.street_green_bin_text_en, R.string.street_green_bin_text_tl) else tr(R.string.street_blue_bin_text_en, R.string.street_blue_bin_text_tl)
+            text = if (page == 1) getString(R.string.street_green_bin_text) else getString(R.string.street_blue_bin_text)
             textSize = 15f
             setTextColor(Color.parseColor("#4A3B2A"))
             setPadding(dp(12), 0, 0, 0)
@@ -397,7 +399,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         layout.addView(headerRow)
 
         val subtitle = TextView(this).apply {
-            text = if (page == 1) tr(R.string.street_bio_items_en, R.string.street_bio_items_tl) else tr(R.string.street_nonbio_items_en, R.string.street_nonbio_items_tl)
+            text = if (page == 1) getString(R.string.street_bio_items) else getString(R.string.street_nonbio_items)
             textSize = 14f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -447,7 +449,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         }
 
         val hint = TextView(this).apply {
-            text = "\n${tr(R.string.street_game_intro_footer_en, R.string.street_game_intro_footer_tl)}"
+            text = "\n${getString(R.string.street_game_intro_footer)}"
             textSize = 13f
             setTextColor(Color.parseColor("#4A3B2A"))
         }
@@ -479,7 +481,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
         resetScoreAndCircles(totalToSort)
 
-        val intro = tr(R.string.trash_intro_en, R.string.trash_intro_tl)
+        val intro = getString(R.string.trash_intro)
         if (ttsReady) {
             speak(intro, "TRASH_START_GAME")
             gameArea.postDelayed(startRoundFallback, 7000L)
@@ -710,7 +712,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private fun showSuccessDialog() {
         val scoreText = getString(R.string.score_result_format, score, wrongCount)
         val message = getString(R.string.trash_level_complete_message, scoreText)
-        val speakText = trf(R.string.trash_result_success_speech_en, R.string.trash_result_success_speech_tl, score, wrongCount)
+        val speakText = getString(R.string.trash_result_success_speech, score, wrongCount)
         speak(speakText, "TRASH_RESULT_SUCCESS")
         btnStart.text = getString(R.string.status_play_again)
 
@@ -743,12 +745,14 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
             "ic_trash_bottle" -> getString(R.string.item_plastic_bottle)
             "ic_trash_wrapper" -> getString(R.string.item_candy_wrapper)
             "ic_trash_styro" -> getString(R.string.item_styrofoam_box)
-            else -> translateArbitraryItemLabel(item.label)
+            else -> translateArbitraryItemLabel(item.labelEn, item.labelTl)
         }
     }
 
-    private fun translateArbitraryItemLabel(raw: String): String {
-        if (LanguagePrefs.isEnglish(this)) return raw
+    private fun translateArbitraryItemLabel(rawEn: String?, rawTl: String?): String {
+        if (LanguagePrefs.isEnglish(this)) return rawEn ?: rawTl ?: getString(R.string.item_this_trash)
+        rawTl?.takeIf { it.isNotBlank() }?.let { return it }
+        val raw = rawEn ?: return getString(R.string.item_this_trash)
         val key = raw.lowercase()
         return when {
             key.contains("fruit vegetable peels") || key.contains("fruit and vegetable peels") -> getString(R.string.item_fruit_vegetable_peels)
