@@ -275,10 +275,10 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 WHERE wm.image_path IS NOT NULL AND wm.image_path <> ''
             """.trimIndent()
             val c = db.rawQuery(sql, null)
-            val imgIdx = c.getColumnIndex("image_path")
-            val nameEnIdx = c.getColumnIndex("name_en")
-            val nameTlIdx = c.getColumnIndex("name_tl")
-            val catIdx = c.getColumnIndex("category_name_en")
+            val imgIdx = c.getColumnIndexOrThrow("image_path")
+            val nameEnIdx = c.getColumnIndexOrThrow("name_en")
+            val nameTlIdx = c.getColumnIndexOrThrow("name_tl")
+            val catIdx = c.getColumnIndexOrThrow("category_name_en")
             while (c.moveToNext()) {
                 val img = c.getString(imgIdx) ?: continue
                 if (map.containsKey(img)) continue

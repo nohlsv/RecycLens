@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -307,8 +308,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 WHERE wm.image_path IS NOT NULL AND wm.image_path <> ''
             """.trimIndent()
             val c = db.rawQuery(sql, null)
-            val pathIdx = c.getColumnIndex("image_path")
-            val nameIdx = c.getColumnIndex("category_name_en")
+            val pathIdx = c.getColumnIndexOrThrow("image_path")
+            val nameIdx = c.getColumnIndexOrThrow("category_name_en")
             while (c.moveToNext()) {
                 val path = c.getString(pathIdx) ?: continue
                 if (map.containsKey(path)) continue
@@ -321,7 +322,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
             }
             c.close()
             db.close()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("StreetCleanupActivity", "loadItemsFromDb failed", e)
         }
 
         if (map.isNotEmpty()) return map.values.toList()
@@ -354,9 +356,9 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 arrayOf(offset.toString())
             )
             if (c.moveToFirst()) {
-                val streetIdx = c.getColumnIndex("street_icon")
-                val countIdx = c.getColumnIndex("trash_count")
-                val timerIdx = c.getColumnIndex("timer")
+                val streetIdx = c.getColumnIndexOrThrow("street_icon")
+                val countIdx = c.getColumnIndexOrThrow("trash_count")
+                val timerIdx = c.getColumnIndexOrThrow("timer")
                 streetIcon = c.getString(streetIdx) ?: "street_cleanup"
                 trashCount = c.getInt(countIdx)
                 timerSeconds = c.getInt(timerIdx)
@@ -372,7 +374,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
             }
             g.close()
             db.close()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("StreetCleanupActivity", "loadLevelConfig failed", e)
         }
 
         if (trashCount <= 0) {
@@ -702,7 +705,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
             )
 
             db.close()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("StreetCleanupActivity", "saveGameResultToDb failed", e)
         }
     }
 

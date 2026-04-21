@@ -37,8 +37,12 @@ object BottomBar {
         langToggle?.setOnClickListener {
             LanguagePrefs.toggle(activity)
             (activity as? AppCompatActivity)?.let { LanguagePrefs.applyLocale(it) }
-            applyLanguageUi()
-            (activity as? LanguageAware)?.onLanguageChanged()
+
+            // Defer refresh one frame so updated locales are visible without forcing recreate.
+            langToggle.post {
+                applyLanguageUi()
+                (activity as? LanguageAware)?.onLanguageChanged()
+            }
         }
 
         navScan?.setOnClickListener {

@@ -84,7 +84,7 @@
     <string name="scanner_tinitingnan_mabuti">Tinitingnan ko mabuti...</string>
     <string name="scanner_analyzing">Analyzing</string>
     <string name="scanner_sinusuri">Sinusuri</string>
-    <string name="scanner_checking_waste">I'm checking what kind of waste this is.</string>
+    <string name="scanner_checking_waste">I\'m checking what kind of waste this is.</string>
     <string name="scanner_opps_try_again">Oops, try again!</string>
     <string name="scanner_ay_ulitin">Ay, ulitin natin!</string>
     <string name="scanner_camera_not_ready">Camera not ready</string>

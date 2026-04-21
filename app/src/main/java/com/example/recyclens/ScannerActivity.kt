@@ -79,9 +79,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private var showingCaptured = false
 
     private lateinit var model2Interpreter: Interpreter
-    private lateinit var extraInterpreter: Interpreter
     private lateinit var model2Labels: List<String>
-    private lateinit var extraLabels: List<String>
 
     private var mediaPlayer: MediaPlayer? = null
 
@@ -124,8 +122,6 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
         private const val MODEL2_LABELS_FILE = "best_int8_labels.txt"
         // private const val MODEL2 = "model2.tflite"
         // private const val MODEL2_LABELS_FILE = "model2_labels.txt"
-        private const val EXTRA_MODEL = "model.tflite"
-        private const val EXTRA_LABELS_FILE = "model_labels.txt"
         private const val INPUT_SIZE = 224
         private const val THRESHOLD = 0.40f  // Lowered from 0.50f for better detection
         private const val CUP_BOTTLE_MARGIN = 0.15f  // Increased margin for better cup/bottle differentiation
@@ -266,7 +262,9 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
         super.onDestroy()
         BackgroundDriftHelper.detach(this)
         cameraExecutor.shutdown()
-        model2Interpreter.close()
+        if (::model2Interpreter.isInitialized) {
+            model2Interpreter.close()
+        }
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null

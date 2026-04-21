@@ -28,6 +28,21 @@ class TranslationResourcesTest {
         )
     }
 
+    @Test
+    fun legacyLanguageSuffixKeysAreRetiredExceptToggleLabels() {
+        val names = stringNamesFrom(projectFile("src/main/res/values/strings.xml"))
+
+        val allowList = setOf("label_en", "label_tl")
+        val legacySuffixKeys = names.filter {
+            (it.endsWith("_en") || it.endsWith("_tl")) && it !in allowList
+        }
+
+        assertTrue(
+            "Legacy *_en/*_tl keys should be retired. Found: ${legacySuffixKeys.sorted()}",
+            legacySuffixKeys.isEmpty()
+        )
+    }
+
     private fun stringNamesFrom(file: File): Set<String> {
         val document = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder()

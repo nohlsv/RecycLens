@@ -124,6 +124,8 @@
 - [x] Add unit/instrumentation checks for locale switching.
   Added `LocaleSwitchingInstrumentedTest` for EN/TL resource switching checks across core game/result strings.
 - [x] Add a string parity check so key names exist in both `values` and `values-tl`.
+- [x] Add a regression guard that blocks reintroducing legacy `*_en` / `*_tl` duplicate keys (except language toggle labels).
+  Added `legacyLanguageSuffixKeysAreRetiredExceptToggleLabels()` in `TranslationResourcesTest`.
 - [x] Add a smoke test for the scanner DB lookup path.
   Added `DatabaseAssetSmokeTest` with SQLite JDBC query checks against `app/src/main/assets/databases/recyclensdb.db`.
 - [ ] Build the app after fixing environment setup.

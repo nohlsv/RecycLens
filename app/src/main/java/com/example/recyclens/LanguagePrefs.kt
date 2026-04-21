@@ -28,7 +28,7 @@ object LanguagePrefs {
     }
 
     fun applyLocale(activity: AppCompatActivity) {
-        val languageTag = if (isEnglish(activity)) "en" else "tl"
+        val languageTag = if (isEnglish(activity)) "en" else "tl,fil"
         val current = AppCompatDelegate.getApplicationLocales().toLanguageTags()
         if (current == languageTag) return
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag))
