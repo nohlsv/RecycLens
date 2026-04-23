@@ -429,6 +429,10 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(8), 0, dp(8))
                 gravity = Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             }
 
             val icon = ImageView(this).apply {
@@ -442,6 +446,9 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 textSize = 14f
                 setTextColor(Color.parseColor("#4A3B2A"))
                 setPadding(dp(12), 0, 0, 0)
+                isSingleLine = false
+                setHorizontallyScrolling(false)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
             row.addView(icon)
@@ -542,6 +549,7 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
             tag = item
         }
 
@@ -552,11 +560,18 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
         }
 
         val labelView = TextView(this).apply {
-            text = localizedItemLabel(item)
+            text = forceTwoLineLabel(localizedItemLabel(item))
             setTextColor(Color.WHITE)
             textSize = 16f
             gravity = Gravity.CENTER
             setShadowLayer(4f, 0f, 0f, Color.BLACK)
+            isSingleLine = false
+            setHorizontallyScrolling(false)
+            includeFontPadding = true
+            maxLines = 2
+            minLines = 2
+            setLineSpacing(0f, 1.1f)
+            layoutParams = LinearLayout.LayoutParams(dp(140), LinearLayout.LayoutParams.WRAP_CONTENT)
         }
 
         container.addView(iv)
@@ -566,7 +581,8 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
             FrameLayout.LayoutParams.WRAP_CONTENT,
             FrameLayout.LayoutParams.WRAP_CONTENT
         ).apply {
-            gravity = Gravity.CENTER
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            topMargin = dp(8)
         }
 
         gameArea.addView(container, lp)
@@ -735,13 +751,28 @@ class TrashSortingActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun translateArbitraryItemLabel(rawEn: String?, rawTl: String?): String {
-        if (LanguagePrefs.isEnglish(this)) return rawEn ?: rawTl ?: getString(R.string.item_this_trash)
-        rawTl?.takeIf { it.isNotBlank() }?.let { return it }
         val spec = rawEn?.let(WasteCatalog::findByDbName)
-        return WasteCatalog.localizedLabel(this, spec) ?: rawEn ?: getString(R.string.item_this_trash)
+            ?: rawTl?.let(WasteCatalog::findByDbName)
+
+        val localized = WasteCatalog.localizedLabel(this, spec)
+        if (!localized.isNullOrBlank()) return localized
+
+        if (LanguagePrefs.isEnglish(this)) {
+            return rawEn ?: rawTl ?: getString(R.string.item_this_trash)
+        }
+
+        rawTl?.takeIf { it.isNotBlank() }?.let { return it }
+        return rawEn ?: getString(R.string.item_this_trash)
     }
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun forceTwoLineLabel(label: String): String {
+        val clean = label.trim()
+        val firstSpace = clean.indexOf(' ')
+        if (firstSpace <= 0 || firstSpace >= clean.lastIndex) return clean
+        return clean.substring(0, firstSpace) + "\n" + clean.substring(firstSpace + 1)
     }
 }

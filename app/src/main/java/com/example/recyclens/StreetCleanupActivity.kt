@@ -950,6 +950,10 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(8), 0, dp(8))
                 gravity = Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             }
 
             val icon = ImageView(this).apply {
@@ -963,6 +967,11 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 textSize = 14f
                 setTextColor(Color.parseColor("#4A3B2A"))
                 setPadding(dp(12), 0, 0, 0)
+                isSingleLine = false
+                setHorizontallyScrolling(false)
+                maxLines = 4
+                setLineSpacing(0f, 1.1f)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
             row.addView(icon)

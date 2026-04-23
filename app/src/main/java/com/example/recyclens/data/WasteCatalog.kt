@@ -87,7 +87,7 @@ object WasteCatalog {
             labelResId = R.string.item_plastic_cup,
             categoryId = NON_BIO_CATEGORY_ID,
             resNames = setOf("ic_trash_plastic_cup"),
-            aliases = setOf("plastic cup", "cup")
+            aliases = setOf("plastic cup", "plastic", "cup")
         ),
         WasteSpec(
             dbNameEn = "Bottle",
