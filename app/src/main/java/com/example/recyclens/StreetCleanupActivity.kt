@@ -22,10 +22,9 @@ import com.example.recyclens.data.WasteCatalog
 import com.example.recyclens.data.db.AppDatabase
 import com.example.recyclens.data.db.GameDbContract
 import com.example.recyclens.data.db.GameDatabase
-import java.util.Locale
 import kotlin.random.Random
 
-class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
+class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.SoundAware {
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -186,6 +185,15 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
         refreshLocalizedTexts()
     }
 
+    override fun onSoundChanged(isMuted: Boolean) {
+        if (isMuted) {
+            stopTts()
+            MusicManager.pause()
+        } else if (isActivityInForeground) {
+            MusicManager.start(this, "street_cleanup_music")
+        }
+    }
+
     private fun refreshLocalizedTexts() {
         titleStreet.text = getString(R.string.game_street_cleanup)
         applyLevelBadgeText()
@@ -209,34 +217,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private fun updateTtsLanguage() {
         val engine = tts ?: return
-        val isEnglish = LanguagePrefs.isEnglish(this)
-
-        var result = if (isEnglish) {
-            engine.setLanguage(Locale.US)
-        } else {
-            engine.setLanguage(Locale.forLanguageTag("fil-PH"))
-        }
-
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            result = if (isEnglish) {
-                engine.setLanguage(Locale.US)
-            } else {
-                engine.setLanguage(Locale.forLanguageTag("tl-PH"))
-            }
-        }
-
-        if (!isEnglish) {
-            val tagalogVoice = engine.voices?.firstOrNull { v ->
-                val lang = v.locale.language.lowercase()
-                lang == "fil" || lang == "tl"
-            }
-            if (tagalogVoice != null) {
-                engine.voice = tagalogVoice
-            }
-        }
-
-        engine.setSpeechRate(1.0f)
-        engine.setPitch(1.0f)
+        TtsLanguageHelper.apply(engine, LanguagePrefs.isEnglish(this))
     }
 
     private fun applyLevelBadgeText() {
@@ -287,7 +268,7 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware {
     }
 
     private fun speak(text: String, utteranceId: String) {
-        if (!ttsReady) return
+        if (!ttsReady || SoundPrefs.isMuted(this)) return
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 

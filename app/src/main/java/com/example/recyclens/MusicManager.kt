@@ -11,6 +11,11 @@ object MusicManager {
 
     @Synchronized
     fun start(context: Context, rawResName: String = "recyclens_browsing_music") {
+        if (SoundPrefs.isMuted(context)) {
+            pause()
+            return
+        }
+
         val appCtx = context.applicationContext
         val resId = appCtx.resources.getIdentifier(rawResName, "raw", appCtx.packageName)
         if (resId == 0) {

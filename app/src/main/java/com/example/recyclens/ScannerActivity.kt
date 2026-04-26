@@ -55,12 +55,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
-import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
-class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
+class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.SoundAware {
 
     private lateinit var topCard: FrameLayout
     private lateinit var previewView: PreviewView
@@ -71,7 +70,6 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
     private lateinit var btnCamera: ImageButton
     private lateinit var btnGallery: ImageButton
     private lateinit var btnPreset: ImageButton
-    private lateinit var btnSpeaker: ImageButton
 
     private lateinit var cameraExecutor: ExecutorService
     private var imageCapture: ImageCapture? = null
@@ -178,7 +176,6 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
         btnCamera = findViewById(R.id.btnCamera)
         btnGallery = findViewById(R.id.btnGallery)
         btnPreset = findViewById(R.id.btnPreset)
-        btnSpeaker = findViewById(R.id.btnSpeaker)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -193,7 +190,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
                     override fun onDone(utteranceId: String?) {
                         if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
                             runOnUiThread {
-                                if (mediaPlayer?.isPlaying == false) {
+                                if (!SoundPrefs.isMuted(this@ScannerActivity) && mediaPlayer?.isPlaying == false) {
                                     mediaPlayer?.start()
                                 }
                             }
@@ -203,7 +200,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
                     override fun onError(utteranceId: String?) {
                         if (wasMusicPlayingBeforeTts && mediaPlayer != null) {
                             runOnUiThread {
-                                if (mediaPlayer?.isPlaying == false) {
+                                if (!SoundPrefs.isMuted(this@ScannerActivity) && mediaPlayer?.isPlaying == false) {
                                     mediaPlayer?.start()
                                 }
                             }
@@ -214,6 +211,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
                 val queued = pendingSpeakText
                 if (!queued.isNullOrBlank()) {
                     pendingSpeakText = null
+                    if (SoundPrefs.isMuted(this)) return@TextToSpeech
                     val result = tts?.speak(queued, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
                     if (result == TextToSpeech.ERROR) {
                         feedbackBanner.show(
@@ -247,10 +245,21 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
         updateTtsLanguage()
     }
 
+    override fun onSoundChanged(isMuted: Boolean) {
+        if (isMuted) {
+            tts?.stop()
+            if (mediaPlayer?.isPlaying == true) mediaPlayer?.pause()
+        } else if (mediaPlayer != null && mediaPlayer?.isPlaying == false) {
+            mediaPlayer?.start()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         isEnglish = LanguagePrefs.isEnglish(this)
-        if (mediaPlayer != null && mediaPlayer?.isPlaying == false) mediaPlayer?.start()
+        if (!SoundPrefs.isMuted(this) && mediaPlayer != null && mediaPlayer?.isPlaying == false) {
+            mediaPlayer?.start()
+        }
     }
 
     override fun onPause() {
@@ -286,43 +295,6 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
         btnGallery.setOnClickListener { pickImage.launch("image/*") }
 
         btnPreset.setOnClickListener { showPresetPicker() }
-
-        btnSpeaker.setOnClickListener {
-            val preferredText = if (isEnglish) speakTextEn else speakTextTl
-            val fallback = buildFallbackSpeakText()
-            val text = preferredText?.takeIf { it.isNotBlank() } ?: fallback
-
-            if (text.isBlank()) {
-                feedbackBanner.show(
-                    getString(R.string.scanner_scan_first),
-                    RecyclensFeedbackBanner.Style.WARNING
-                )
-                return@setOnClickListener
-            }
-
-            if (!ttsReady || tts == null) {
-                pendingSpeakText = text
-                feedbackBanner.show(
-                    getString(R.string.scanner_voice_loading),
-                    RecyclensFeedbackBanner.Style.INFO
-                )
-                return@setOnClickListener
-            }
-
-            wasMusicPlayingBeforeTts = mediaPlayer?.isPlaying == true
-            if (wasMusicPlayingBeforeTts) {
-                mediaPlayer?.pause()
-            }
-
-            updateTtsLanguage()
-            val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "SCAN_TTS")
-            if (result == TextToSpeech.ERROR) {
-                feedbackBanner.show(
-                    getString(R.string.scanner_voice_play_error),
-                    RecyclensFeedbackBanner.Style.ERROR
-                )
-            }
-        }
     }
 
     private fun buildFallbackSpeakText(): String {
@@ -335,37 +307,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware {
 
     private fun updateTtsLanguage() {
         val engine = tts ?: return
-
-        val locale = if (isEnglish) {
-            Locale.US
-        } else {
-            Locale.forLanguageTag("fil-PH")
-        }
-
-        var result = engine.setLanguage(locale)
-
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            if (!isEnglish) {
-                val tlLocale = Locale.forLanguageTag("tl-PH")
-                result = engine.setLanguage(tlLocale)
-            } else {
-                result = engine.setLanguage(Locale.US)
-            }
-        }
-
-        if (!isEnglish) {
-            val voices = engine.voices
-            val tagalogVoice = voices?.firstOrNull { v ->
-                val lang = v.locale.language.lowercase()
-                lang == "fil" || lang == "tl"
-            }
-            if (tagalogVoice != null) {
-                engine.voice = tagalogVoice
-            }
-        }
-
-        engine.setSpeechRate(1.0f)
-        engine.setPitch(1.0f)
+        TtsLanguageHelper.apply(engine, isEnglish)
     }
 
     private fun ensureCameraReady() {

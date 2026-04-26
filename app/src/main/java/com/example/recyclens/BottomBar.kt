@@ -4,6 +4,7 @@ package com.example.recyclens
 import android.app.Activity
 import android.content.Intent
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
@@ -13,6 +14,9 @@ object BottomBar {
     interface LanguageAware {
         fun onLanguageChanged()
     }
+    interface SoundAware {
+        fun onSoundChanged(isMuted: Boolean)
+    }
 
     fun setup(activity: Activity, selected: Tab? = null) {
         val navScan: View? = activity.findViewById(R.id.navScan)
@@ -21,6 +25,7 @@ object BottomBar {
         val langText: TextView? = activity.findViewById(R.id.langText)
         val labelScan: TextView? = activity.findViewById(R.id.labelScan)
         val labelPlay: TextView? = activity.findViewById(R.id.labelPlay)
+        val btnSpeaker: ImageButton? = activity.findViewById(R.id.btnSpeaker)
 
         navScan?.isSelected = (selected == Tab.SCAN)
         navPlay?.isSelected = (selected == Tab.PLAY)
@@ -34,6 +39,18 @@ object BottomBar {
 
         applyLanguageUi()
 
+        fun applySoundUi() {
+            val muted = SoundPrefs.isMuted(activity)
+            btnSpeaker?.setImageResource(
+                if (muted) android.R.drawable.ic_lock_silent_mode else android.R.drawable.ic_lock_silent_mode_off
+            )
+            btnSpeaker?.contentDescription = activity.getString(
+                if (muted) R.string.cd_sound_muted else R.string.cd_sound_unmuted
+            )
+        }
+
+        applySoundUi()
+
         langToggle?.setOnClickListener {
             LanguagePrefs.toggle(activity)
             (activity as? AppCompatActivity)?.let { LanguagePrefs.applyLocale(it) }
@@ -41,8 +58,15 @@ object BottomBar {
             // Defer refresh one frame so updated locales are visible without forcing recreate.
             langToggle.post {
                 applyLanguageUi()
+                applySoundUi()
                 (activity as? LanguageAware)?.onLanguageChanged()
             }
+        }
+
+        btnSpeaker?.setOnClickListener {
+            val muted = SoundPrefs.toggle(activity)
+            applySoundUi()
+            (activity as? SoundAware)?.onSoundChanged(muted)
         }
 
         navScan?.setOnClickListener {

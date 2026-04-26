@@ -175,6 +175,8 @@
     <string name="cd_info_icon">Icon ng impormasyon</string>
     <string name="cd_bin_icon">Icon ng basurahan</string>
     <string name="cd_open_games">Buksan ang mga laro</string>
+    <string name="cd_sound_unmuted">Naka-on ang tunog. Pindutin para i-mute.</string>
+    <string name="cd_sound_muted">Naka-off ang tunog. Pindutin para i-unmute.</string>
 
     <!-- Info card -->
     <string name="info_title">Hindi Nabubulok</string>

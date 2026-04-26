@@ -175,6 +175,8 @@
     <string name="cd_info_icon">Information icon</string>
     <string name="cd_bin_icon">Trash bin icon</string>
     <string name="cd_open_games">Open games</string>
+    <string name="cd_sound_unmuted">Sound on. Tap to mute.</string>
+    <string name="cd_sound_muted">Sound off. Tap to unmute.</string>
 
     <!-- Info card -->
     <string name="info_title">Non-Biodegradable\nHindi Nabubulok</string>
