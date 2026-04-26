@@ -108,6 +108,7 @@
     <string name="scanner_voice_play_error">Hindi ma-play ang voice guide.</string>
     <string name="scanner_voice_unavailable">Hindi available ang voice guide sa device na ito.</string>
     <string name="scanner_voice_loading">Naglo-load pa ang voice guide. Pindutin muli sandali.</string>
+    <string name="scanner_sample_styrofoam_box">Styro na Baso</string>
 
     <!-- Picker / dialogs -->
     <string name="dialog_restart_game_title">Ulitin ang laro?</string>
@@ -159,7 +160,7 @@
     <string name="item_plastic_bottle">Bote</string>
     <string name="item_plastic_cup">Plastik na Baso</string>
     <string name="item_candy_wrapper">Balot ng Kendi</string>
-    <string name="item_styrofoam_box">Styro na Lalagyan</string>
+    <string name="item_styrofoam_box">Styro na Baso</string>
     <string name="item_can">Lata</string>
     <string name="item_vegetable">Gulay</string>
     <string name="item_this_trash">Ang basurang ito</string>

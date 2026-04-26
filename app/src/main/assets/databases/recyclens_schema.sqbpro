@@ -16,7 +16,7 @@ VALUES
 ('Plastic Cup', 'Plastik na Baso', 'Disposable plastic cup', 'Itinatapong plastik na baso', 'ic_trash_plastic_cup', 2),
 ('Plastic Bottle', 'Plastik na Bote', 'Water bottle', 'Bote ng tubig', 'ic_trash_bottle', 2),
 ('Candy Wrapper', 'Balot ng Kendi', 'Plastic wrapper', 'Balot ng kendi', 'ic_trash_wrapper', 2),
-('Styrofoam Box', 'Styro na Lalagyan', 'Food container', 'Lalagyan ng pagkain', 'ic_trash_styro', 2);
+('Styrofoam Cup', 'Styro na Baso', 'Food container', 'Lalagyan ng pagkain', 'ic_trash_styro', 2);
 
 INSERT INTO &quot;game&quot; (game_title, game_level, current_score) VALUES
 ('Street Cleanup', 'Easy', 0),
@@ -40,7 +40,7 @@ VALUES
 ('ic_trash_plastic_cup', 'Non-Biodegradable', 'Plastic Cup'),
 ('ic_trash_bottle', 'Non-Biodegradable', 'Plastic Bottle'),
 ('ic_trash_wrapper', 'Non-Biodegradable', 'Candy Wrapper'),
-('ic_trash_styro', 'Non-Biodegradable', 'Styrofoam Box');
+('ic_trash_styro', 'Non-Biodegradable', 'Styrofoam Cup');
 
 DELETE FROM &quot;street_cleanup_game&quot;;
 

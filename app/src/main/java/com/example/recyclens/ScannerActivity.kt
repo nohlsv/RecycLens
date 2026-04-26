@@ -443,8 +443,12 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
 
     private fun showPresetPicker() {
         val labels = presetSamples.map { sample ->
-            WasteCatalog.localizedLabelForResName(this, sample.resName)
-                ?: humanReadableLabel(sample.label)
+            if (sample.resName == "ic_trash_styro") {
+                getString(R.string.scanner_sample_styrofoam_box)
+            } else {
+                WasteCatalog.localizedLabelForResName(this, sample.resName)
+                    ?: humanReadableLabel(sample.label)
+            }
         }
 
         val rowsContainer = LinearLayout(this).apply {
@@ -942,6 +946,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
         val material = lastMaterial
         val category = lastCategory
         val displayLabel = humanReadableLabel(pred.label)
+        val explicitStyroLabel = explicitStyrofoamLabel(pred.label)
         val predictedSpec = WasteCatalog.findByPredictionLabel(pred.label)
 
         val materialNameEn: String
@@ -954,12 +959,16 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
         val categoryDescTl: String
 
         if (material != null) {
-            materialNameEn = material.nameEn?.takeIf { it.isNotBlank() } ?: displayLabel
+            materialNameEn = explicitStyroLabel ?: (material.nameEn?.takeIf { it.isNotBlank() } ?: displayLabel)
             materialNameTl =
-                material.nameTl?.takeIf { it.isNotBlank() }
-                    ?: WasteCatalog.filipinoNameForEnglish(materialNameEn)
-                    ?: WasteCatalog.localizedLabel(this, predictedSpec)
-                            ?: materialNameEn
+                when (explicitStyroLabel) {
+                    "Styrofoam Cup" -> "Styro na Baso"
+                    "Styrofoam Box" -> "Styro na Lalagyan"
+                    else -> material.nameTl?.takeIf { it.isNotBlank() }
+                        ?: WasteCatalog.filipinoNameForEnglish(materialNameEn)
+                        ?: WasteCatalog.localizedLabel(this, predictedSpec)
+                        ?: materialNameEn
+                }
 
             categoryId = material.categoryId
             isNonBio = (categoryId == 2)
@@ -974,11 +983,15 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
             categoryDescTl =
                 category?.descriptionTl ?: if (isNonBio) getString(R.string.scanner_itapon_blue) else getString(R.string.scanner_itapon_green)
         } else {
-            materialNameEn = WasteCatalog.englishNameForAnyName(displayLabel) ?: displayLabel
+            materialNameEn = explicitStyroLabel ?: (WasteCatalog.englishNameForAnyName(displayLabel) ?: displayLabel)
             materialNameTl =
-                WasteCatalog.filipinoNameForEnglish(materialNameEn)
-                    ?: WasteCatalog.localizedLabel(this, predictedSpec)
-                    ?: materialNameEn
+                when (explicitStyroLabel) {
+                    "Styrofoam Cup" -> "Styro na Baso"
+                    "Styrofoam Box" -> "Styro na Lalagyan"
+                    else -> WasteCatalog.filipinoNameForEnglish(materialNameEn)
+                        ?: WasteCatalog.localizedLabel(this, predictedSpec)
+                        ?: materialNameEn
+                }
 
             val guessedCategoryId = WasteCatalog.categoryIdForLabel(pred.label) ?: mapToCategoryId(pred.label) ?: 0
             categoryId = guessedCategoryId
@@ -1132,7 +1145,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
             "styrofoam" -> {
                 list.add("Styrofoam Box")
             }
-            "styrofoam cup" -> list.add("Styrofoam Box")
+            "styrofoam cup" -> list.add("Styrofoam Cup")
         }
 
         when {
@@ -1162,7 +1175,7 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
             lower.contains("eggplant") -> list.add("Vegetable")
             lower.contains("orange") -> list.add("Fruit")
             lower.contains("pet bottle") -> list.add("Bottle")
-            lower.contains("styrofoam cup") -> list.add("Styrofoam Box")
+            lower.contains("styrofoam cup") -> list.add("Styrofoam Cup")
             lower.contains("tissue core") -> list.add("Tissue")
         }
 
@@ -1174,15 +1187,18 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
     }
 
     private fun humanReadableLabel(rawLabel: String): String {
-        WasteCatalog.findByPredictionLabel(rawLabel)?.let { return it.dbNameEn }
-
         val normalized = rawLabel.trim().lowercase().replace("_", " ").replace("-", " ")
+
+        explicitStyrofoamLabel(rawLabel)?.let { return it }
+
+        WasteCatalog.findByPredictionLabel(rawLabel)?.let { return it.dbNameEn }
 
         return when (normalized) {
             "plastic wrapper", "wrapper" -> "Candy Wrapper"
             "pet bottle" -> "Bottle"
             "plastic cup" -> "Plastic Cup"
-            "styrofoam cup", "styrofoam tray" -> "Styrofoam Box"
+            "styrofoam tray" -> "Styrofoam Box"
+            "styrofoam cup" -> "Styrofoam Cup"
             "tissue core" -> "Tissue"
             "fruit vegetable peels", "fruit and vegetable peels" -> "Fruit and Vegetable Peels"
             "stationery paper", "bond paper", "intermediate pad", "construction paper", "paper" -> "Stationery Paper"
@@ -1193,6 +1209,15 @@ class ScannerActivity : AppCompatActivity(), BottomBar.LanguageAware, BottomBar.
             else -> normalized.split(Regex("\\s+")).joinToString(" ") { word ->
                 word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
             }
+        }
+    }
+
+    private fun explicitStyrofoamLabel(rawLabel: String): String? {
+        val normalized = rawLabel.trim().lowercase().replace("_", " ").replace("-", " ")
+        return when {
+            normalized.contains("styrofoam cup") -> "Styrofoam Cup"
+            normalized.contains("styrofoam box") || normalized.contains("styrofoam tray") -> "Styrofoam Box"
+            else -> null
         }
     }
 

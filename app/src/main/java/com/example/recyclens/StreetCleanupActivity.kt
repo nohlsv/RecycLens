@@ -735,6 +735,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware, Bott
     }
 
     private fun showFailDialog() {
+        rootLayout.setBackgroundResource(R.drawable.street_cleanup_game_flood)
+
         val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
         val timeUsed = totalSeconds - secondsLeft
         val timeText = getString(R.string.time_used_format, timeUsed)
@@ -771,6 +773,8 @@ class StreetCleanupActivity : AppCompatActivity(), BottomBar.LanguageAware, Bott
     }
 
     private fun showLowScoreDialog() {
+        rootLayout.setBackgroundResource(R.drawable.street_cleanup_game_flood)
+
         val scoreText = getString(R.string.score_result_format, correctCount, wrongCount)
         val itemsText = getString(R.string.street_sorted_all_items, totalItems)
 

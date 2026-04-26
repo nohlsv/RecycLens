@@ -108,6 +108,7 @@
     <string name="scanner_voice_play_error">Voice guide could not play.</string>
     <string name="scanner_voice_unavailable">Voice guide is unavailable on this device.</string>
     <string name="scanner_voice_loading">Voice guide is loading. Please tap again in a moment.</string>
+    <string name="scanner_sample_styrofoam_box">Styrofoam Cup</string>
 
     <!-- Picker / dialogs -->
     <string name="dialog_restart_game_title">Restart game?</string>
@@ -152,7 +153,7 @@
     <string name="item_tissue">Tissue</string>
     <string name="item_plastic_cup">Plastic Cup</string>
     <string name="item_candy_wrapper">Candy Wrapper</string>
-    <string name="item_styrofoam_box">Styrofoam Box</string>
+    <string name="item_styrofoam_box">Styrofoam Cup</string>
     <string name="item_can">Can</string>
     <string name="item_vegetable">Vegetable</string>
     <string name="item_this_trash">This trash</string>
